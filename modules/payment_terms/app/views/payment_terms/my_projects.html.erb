@@ -1,0 +1,50 @@
+<% html_title t("payment_terms.my_projects.title") %>
+
+<div class="generic-table--container">
+  <h2><%= t("payment_terms.my_projects.title") %></h2>
+
+  <% if @payments.empty? %>
+    <p><%= t("payment_terms.my_projects.no_payments") %></p>
+  <% else %>
+    <table class="generic-table">
+      <thead>
+        <tr>
+          <th><%= t("payment_terms.columns.sn") %></th>
+          <th><%= t("payment_terms.columns.project") %></th>
+          <th><%= t("payment_terms.columns.account_manager") %></th>
+          <th><%= t("payment_terms.columns.contract_line") %></th>
+          <th><%= t("payment_terms.columns.payment") %></th>
+          <th><%= t("payment_terms.columns.percent") %></th>
+          <th><%= t("payment_terms.columns.value") %></th>
+          <th><%= t("payment_terms.columns.milestone") %></th>
+          <th><%= t("payment_terms.columns.invoiced") %></th>
+          <th><%= t("payment_terms.columns.expected_invoice_date") %></th>
+          <th><%= t("payment_terms.columns.collected") %></th>
+          <th><%= t("payment_terms.columns.invoice_number") %></th>
+          <th><%= t("payment_terms.columns.invoice_date") %></th>
+          <th><%= t("payment_terms.columns.comments") %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @payments.each_with_index do |payment, index| %>
+          <tr>
+            <td><%= index + 1 %></td>
+            <td><%= link_to payment.project.name, projects_payment_terms_path(payment.project) %></td>
+            <td><%= payment_terms_account_manager(payment.project) %></td>
+            <td><%= payment.contract_line.name %></td>
+            <td><%= payment.description %></td>
+            <td><%= payment.percent %></td>
+            <td><%= number_to_currency(payment.value, unit: "QAR ", format: "%u%n") if payment.value %></td>
+            <td><%= link_to payment.milestone.subject, work_package_path(payment.milestone) if payment.milestone %></td>
+            <td><%= payment.invoiced? ? t(:general_text_yes) : t(:general_text_no) %></td>
+            <td><%= format_date(payment.expected_invoice_date) %></td>
+            <td><%= payment.collected? ? t(:general_text_yes) : t(:general_text_no) %></td>
+            <td><%= payment.invoice_number %></td>
+            <td><%= format_date(payment.invoice_date) %></td>
+            <td><%= payment.comments %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>

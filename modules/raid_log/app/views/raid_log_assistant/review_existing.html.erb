@@ -1,0 +1,53 @@
+<% html_title t("label_raid_log_ai_assist") %>
+
+<div class="generic-table--container">
+  <h2><%= t("raid_log.review.title", subject: @work_package.subject) %></h2>
+
+  <% if @suggestion %>
+    <p><%= t("raid_log.review.description") %></p>
+
+    <%= form_tag apply_raid_log_review_work_package_path(@work_package), data: { turbo: false } do %>
+      <div class="form--field">
+        <label class="form--label"><%= t("raid_log.propose.subject_label") %></label>
+        <div class="form--field-container">
+          <%= text_field_tag "entry[subject]", @suggestion[:subject], size: 60 %>
+        </div>
+      </div>
+
+      <div class="form--field">
+        <label class="form--label"><%= t("raid_log.propose.description_label") %></label>
+        <div class="form--field-container">
+          <%= text_area_tag "entry[description]", @suggestion[:description], rows: 3, cols: 60 %>
+        </div>
+      </div>
+
+      <% @field_spec.each do |field| %>
+        <div class="form--field">
+          <label class="form--label"><%= field[:name] %></label>
+          <div class="form--field-container">
+            <% suggested_value = @suggestion[:custom_field_values][field[:id]] %>
+            <% if field[:format] == "list" %>
+              <% options = WorkPackageCustomField.find(field[:id]).custom_options.order(:position) %>
+              <%= select_tag "entry[custom_fields][#{field[:id]}]",
+                              options_for_select([[t("raid_log.propose.blank_option"), ""]] +
+                                                  options.map { |o| [o.value, o.id.to_s] },
+                                                  suggested_value) %>
+            <% elsif field[:format] == "date" %>
+              <%= date_field_tag "entry[custom_fields][#{field[:id]}]", suggested_value %>
+            <% else %>
+              <%= text_field_tag "entry[custom_fields][#{field[:id]}]", suggested_value, size: 60 %>
+            <% end %>
+            <p class="form--field-instructions"><%= t("raid_log.review.current_value") %>: <%= @work_package.formatted_custom_value_for(WorkPackageCustomField.find(field[:id])) %></p>
+          </div>
+        </div>
+      <% end %>
+
+      <div class="form--actions">
+        <%= submit_tag t("raid_log.review.apply"), class: "button -highlight" %>
+        <%= link_to t("raid_log.review.cancel"), work_package_path(@work_package) %>
+      </div>
+    <% end %>
+  <% else %>
+    <%= link_to t("raid_log.review.cancel"), work_package_path(@work_package) %>
+  <% end %>
+</div>

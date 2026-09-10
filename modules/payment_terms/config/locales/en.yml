@@ -1,0 +1,100 @@
+---
+en:
+  label_payment_terms: "Payment Terms"
+  project_module_payment_terms: "Payment Terms"
+  permission_view_payment_terms: "View payment terms"
+  permission_edit_payment_terms: "Manage payment terms"
+  label_pmo_dashboard: "PMO Dashboard"
+
+  activerecord:
+    attributes:
+      payment_terms/payment:
+        milestone: "Milestone"
+
+  js:
+    grid:
+      widgets:
+        pmo_dashboard:
+          title: "PMO Dashboard"
+
+  payment_terms:
+    index:
+      title: "Payment Terms"
+      new_line: "New contract line"
+      edit: "Edit"
+      delete: "Delete"
+      new_payment: "Add payment"
+      no_lines: "No contract lines yet."
+    line_form:
+      title_new: "New contract line"
+      title_edit: "Edit contract line"
+      name_label: "Name (e.g. Implementation, Support Year 1)"
+      value_label: "Component value (QAR)"
+      submit: "Save"
+    payment_form:
+      title_new: "New payment"
+      title_edit: "Edit payment"
+      description_label: "Payment terms / deliverable"
+      percent_label: "Percent of this contract line's value"
+      milestone_label: "Linked milestone (optional)"
+      no_milestone: "(none)"
+      expected_invoice_date_label: "Expected invoice date"
+      expected_invoice_date_hint: "Auto-filled from the linked milestone's date, and kept in sync if the milestone's date changes. Only editable when no milestone is linked."
+      invoiced_label: "Invoiced"
+      invoice_number_label: "Invoice number"
+      invoice_date_label: "Invoice date"
+      collected_label: "Collected"
+      comments_label: "Comments"
+      submit: "Save"
+    columns:
+      sn: "S/N"
+      project: "Project"
+      account_manager: "Account Manager"
+      contract_line: "Contract line"
+      payment: "Payment terms"
+      percent: "%"
+      value: "Value (QAR)"
+      milestone: "Milestone"
+      invoiced: "Invoiced"
+      expected_invoice_date: "Expected invoice date"
+      collected: "Collected"
+      invoice_number: "Invoice number"
+      invoice_date: "Invoice date"
+      comments: "Comments"
+    my_projects:
+      title: "Payment Terms - My Projects"
+      no_payments: "No payment terms found across your projects."
+    notices:
+      line_created: "Contract line created."
+      line_updated: "Contract line updated."
+      line_deleted: "Contract line deleted."
+      payment_created: "Payment created."
+      payment_updated: "Payment updated."
+      payment_deleted: "Payment deleted."
+
+  pmo_dashboard:
+    start: "Start"
+    end: "End"
+    client: "Client"
+    progress: "Progress"
+    expected: "Expected"
+    actual: "Actual"
+    exp: "Exp"
+    act: "Act"
+    in_progress: "%{done}/%{total} In Progress"
+    planned_actual_hours: "Planned vs Actual Hours"
+    planned: "Planned"
+    milestones: "Milestones"
+    risks_issues: "Risks & Issues"
+    severity:
+      critical: "Extreme"
+      high: "High"
+      medium: "Medium"
+      low: "Low"
+    invoices_billing: "Invoices & Billing"
+    issued: "Issued"
+    remaining: "Remaining"
+    collected: "Collected"
+    collection_rate: "Collection Rate"
+    my_projects_title: "PMO Dashboard - My Projects"
+    no_projects: "No projects to show."

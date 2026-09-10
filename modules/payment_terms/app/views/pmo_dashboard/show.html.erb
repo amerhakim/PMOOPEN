@@ -1,0 +1,8 @@
+<% html_title t("label_pmo_dashboard") %>
+
+
+<h2><%= @project.name %> &mdash; <%= t("label_pmo_dashboard") %></h2>
+
+<div class="pmo-dashboard pmo-dashboard-single">
+  <%= render "card", summary: @summary %>
+</div>

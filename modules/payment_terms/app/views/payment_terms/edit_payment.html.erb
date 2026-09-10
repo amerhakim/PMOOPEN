@@ -1,0 +1,6 @@
+<% html_title t("payment_terms.payment_form.title_edit") %>
+
+<div class="generic-table--container">
+  <h2><%= t("payment_terms.payment_form.title_edit") %> &mdash; <%= @contract_line.name %></h2>
+  <%= render "payment_form", url: projects_payment_terms_payment_path(@project, @payment) %>
+</div>

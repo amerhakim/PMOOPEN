@@ -1,0 +1,12 @@
+<input
+  type="text"
+  class="inline-edit--field op-input"
+  autocomplete="off"
+  placeholder="e.g. 3, 7SS-1, 12FF+2"
+  [disabled]="inFlight"
+  [(ngModel)]="text"
+  (keydown.enter)="onEnter($event)"
+  (keydown.escape)="handler.handleUserCancel()"
+  [id]="handler.htmlId"
+/>
+<div class="op-input--error-text" *ngIf="errorMessage">{{ errorMessage }}</div>
