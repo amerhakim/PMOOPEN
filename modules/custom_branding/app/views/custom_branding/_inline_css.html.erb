@@ -1,0 +1,27 @@
+<% custom_branding = CustomBranding::Setting.current %>
+<% if custom_branding %>
+  <style type="text/css">
+    :root {
+      <% CustomBranding::Setting::COLOR_FIELDS.each do |field| %>
+        <% value = custom_branding.public_send(field) %>
+        <% if value.present? %>
+          --<%= field.dasherize %>: <%= value %> !important;
+        <% end %>
+      <% end %>
+
+      <% if custom_branding.header_bg_color.present? %>
+        --header-item-font-color: <%= CustomBranding::Setting.contrasting_font_color(custom_branding.header_bg_color) %> !important;
+      <% end %>
+
+      <% if custom_branding.main_menu_bg_color.present? %>
+        --main-menu-font-color: <%= CustomBranding::Setting.contrasting_font_color(custom_branding.main_menu_bg_color) %> !important;
+      <% end %>
+    }
+    <% if custom_branding.logo.present? %>
+      .op-logo--link,
+      .op-logo--link_high_contrast {
+        background-image: url(<%= custom_branding_logo_path(digest: custom_branding.digest) %>) !important;
+      }
+    <% end %>
+  </style>
+<% end %>

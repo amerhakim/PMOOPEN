@@ -1,0 +1,74 @@
+<% html_title t("payment_terms.index.title") %>
+
+<div class="generic-table--container">
+  <h2><%= t("payment_terms.index.title") %></h2>
+
+  <% can_edit = User.current.allowed_in_project?(:edit_payment_terms, @project) %>
+
+  <% @contract_lines.each do |line| %>
+    <h3>
+      <%= line.name %>
+      <% if line.component_value.present? %>
+        &mdash; <%= number_to_currency(line.component_value, unit: "QAR ", format: "%u%n") %>
+      <% end %>
+    </h3>
+
+    <% if can_edit %>
+      <p>
+        <%= link_to t("payment_terms.index.edit"), projects_edit_payment_terms_line_path(@project, line) %>
+        |
+        <%= link_to t("payment_terms.index.delete"), projects_payment_terms_line_path(@project, line),
+                    data: { confirm: t("text_are_you_sure"), turbo_method: :delete } %>
+        |
+        <%= link_to t("payment_terms.index.new_payment"), projects_new_payment_terms_payment_path(@project, line) %>
+      </p>
+    <% end %>
+
+    <table class="generic-table">
+      <thead>
+        <tr>
+          <th><%= t("payment_terms.columns.sn") %></th>
+          <th><%= t("payment_terms.columns.payment") %></th>
+          <th><%= t("payment_terms.columns.percent") %></th>
+          <th><%= t("payment_terms.columns.value") %></th>
+          <th><%= t("payment_terms.columns.milestone") %></th>
+          <th><%= t("payment_terms.columns.invoiced") %></th>
+          <th><%= t("payment_terms.columns.expected_invoice_date") %></th>
+          <th><%= t("payment_terms.columns.collected") %></th>
+          <th><%= t("payment_terms.columns.invoice_number") %></th>
+          <th><%= t("payment_terms.columns.invoice_date") %></th>
+          <th><%= t("payment_terms.columns.comments") %></th>
+          <% if can_edit %><th></th><% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <% line.payments.each_with_index do |payment, index| %>
+          <tr>
+            <td><%= index + 1 %></td>
+            <td><%= payment.description %></td>
+            <td><%= payment.percent %></td>
+            <td><%= number_to_currency(payment.value, unit: "QAR ", format: "%u%n") if payment.value %></td>
+            <td><%= link_to payment.milestone.subject, work_package_path(payment.milestone) if payment.milestone %></td>
+            <td><%= payment.invoiced? ? t(:general_text_yes) : t(:general_text_no) %></td>
+            <td><%= format_date(payment.expected_invoice_date) %></td>
+            <td><%= payment.collected? ? t(:general_text_yes) : t(:general_text_no) %></td>
+            <td><%= payment.invoice_number %></td>
+            <td><%= format_date(payment.invoice_date) %></td>
+            <td><%= payment.comments %></td>
+            <% if can_edit %>
+              <td><%= link_to t("payment_terms.index.edit"), projects_edit_payment_terms_payment_path(@project, payment) %></td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+
+  <% if @contract_lines.empty? %>
+    <p><%= t("payment_terms.index.no_lines") %></p>
+  <% end %>
+
+  <% if can_edit %>
+    <p><%= link_to t("payment_terms.index.new_line"), projects_new_payment_terms_line_path(@project), class: "button -highlight" %></p>
+  <% end %>
+</div>

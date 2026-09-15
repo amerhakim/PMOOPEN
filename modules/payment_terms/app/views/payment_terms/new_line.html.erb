@@ -1,0 +1,6 @@
+<% html_title t("payment_terms.line_form.title_new") %>
+
+<div class="generic-table--container">
+  <h2><%= t("payment_terms.line_form.title_new") %></h2>
+  <%= render "line_form", url: projects_payment_terms_lines_path(@project) %>
+</div>

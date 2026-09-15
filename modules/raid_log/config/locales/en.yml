@@ -1,0 +1,42 @@
+---
+en:
+  label_raid_log_ai_assist: "RAID Log AI Assist"
+  project_module_raid_log: "RAID Log"
+  permission_use_raid_log_ai_assist: "Use RAID Log AI Assist"
+
+  raid_log:
+    types:
+      risk: "Risk"
+      issue: "Issue"
+      action: "Action"
+      decision: "Decision"
+    new:
+      description: "Let the local AI draft new Risk / Issue / Action / Decision Log entries for this project, based on the project's description and existing work packages. You'll review and edit every entry before anything is created."
+      type_label: "Log type"
+      context_label: "Extra context for the AI (optional)"
+      context_placeholder: "e.g. focus on vendor and licensing risks for the upcoming Phase 4 rollout"
+      count_label: "How many entries to propose"
+      submit: "Ask the AI"
+    propose:
+      title: "Proposed %{type} Log entries"
+      description: "Review and edit each entry below, uncheck any you don't want, then create them."
+      include_this_entry: "Include this entry"
+      subject_label: "Subject"
+      description_label: "Description"
+      blank_option: "(leave blank)"
+      submit: "Create selected entries"
+      start_over: "Start over"
+    review:
+      title: "AI review: %{subject}"
+      description: "The AI's suggested corrections are pre-filled below alongside the current value of each field. Edit as needed, then apply."
+      current_value: "Current value"
+      apply: "Apply changes"
+      cancel: "Cancel"
+    errors:
+      no_suggestions: "The local AI did not return any usable suggestions. Try again, or add more context."
+    notices:
+      entries_created:
+        zero: "No entries were created (nothing was selected)."
+        one: "1 entry created."
+        other: "%{count} entries created."
+      entry_updated: "Entry updated."
