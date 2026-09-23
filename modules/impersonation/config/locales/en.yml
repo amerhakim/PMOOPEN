@@ -1,0 +1,17 @@
+---
+en:
+  label_impersonation: "Login as..."
+
+  impersonation:
+    title: "Login as..."
+    hint: "Admin-only QA tool: instantly view the app as any user, then return to your own account with one click. Every page shows a banner while active."
+    columns:
+      login: "Login"
+      name: "Name"
+      mail: "Email"
+    login_as: "Login as"
+    banner: "You are viewing as %{name}."
+    return_link: "Return to your account"
+    notices:
+      started: "You are now viewing as %{name}."
+      stopped: "Returned to your own account."

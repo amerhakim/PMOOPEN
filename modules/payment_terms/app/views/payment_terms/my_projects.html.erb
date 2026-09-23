@@ -1,0 +1,134 @@
+<% html_title t("payment_terms.my_projects.title") %>
+
+<h2><%= t("payment_terms.my_projects.title") %></h2>
+
+<p>
+  <%= render(Primer::Beta::Button.new(scheme: :primary, tag: :a, href: export_my_payment_terms_path)) do |btn| %>
+    <% btn.with_leading_visual_icon(icon: :download) %>
+    <%= t("payment_terms.my_projects.export_link") %>
+  <% end %>
+</p>
+
+<%= form_with url: my_payment_terms_path, method: :get, local: true do %>
+  <div class="generic-table--container">
+    <div class="generic-table--results-container">
+      <table class="generic-table">
+        <colgroup>
+          <col style="width: 3em;">
+          <col style="width: 11em;">
+          <col style="width: 6em;">
+          <col style="width: 9em;">
+          <col style="width: 9em;">
+          <col style="width: 16em;">
+          <col style="width: 8em;">
+          <col style="width: 5.5em;">
+          <col style="width: 8.5em;">
+          <col style="width: 5.5em;">
+          <col style="width: 8em;">
+          <col style="width: 8.5em;">
+          <col>
+        </colgroup>
+        <thead>
+          <tr>
+            <% %w[sn project o_and_d account_manager project_manager payment value invoiced expected_invoice_date collected invoice_number invoice_date comments].each do |column| %>
+              <th>
+                <div class="generic-table--sort-header-outer">
+                  <div class="generic-table--sort-header">
+                    <span><%= t("payment_terms.columns.#{column}") %></span>
+                  </div>
+                </div>
+              </th>
+            <% end %>
+          </tr>
+          <tr class="payment-terms--filter-row">
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary, size: :small, "aria-label": t("payment_terms.filters.apply"))) do %>
+                <%= render(Primer::Beta::Octicon.new(icon: :filter, size: :small)) %>
+              <% end %>
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <select name="q[project]" class="payment-terms--filter-select" style="width:100%; height:28px; font-size:12px; border:1px solid var(--borderColor-default, #d0d7de); border-radius:6px; padding:0 6px;">
+                <%= options_for_select([[t("payment_terms.filters.all"), ""]] + @project_options.map { |name| [name, name] }, @filters[:project]) %>
+              </select>
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <%= render(Primer::Alpha::TextField.new(name: "q[o_and_d]", label: t("payment_terms.columns.o_and_d"), visually_hide_label: true, value: @filters[:o_and_d], placeholder: t("payment_terms.columns.o_and_d"), full_width: true, size: :small)) %>
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <select name="q[account_manager]" class="payment-terms--filter-select" style="width:100%; height:28px; font-size:12px; border:1px solid var(--borderColor-default, #d0d7de); border-radius:6px; padding:0 6px;">
+                <%= options_for_select([[t("payment_terms.filters.all"), ""]] + @account_manager_options.map { |name| [name, name] }, @filters[:account_manager]) %>
+              </select>
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <select name="q[project_manager]" class="payment-terms--filter-select" style="width:100%; height:28px; font-size:12px; border:1px solid var(--borderColor-default, #d0d7de); border-radius:6px; padding:0 6px;">
+                <%= options_for_select([[t("payment_terms.filters.all"), ""]] + @project_manager_options.map { |name| [name, name] }, @filters[:project_manager]) %>
+              </select>
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <%= render(Primer::Alpha::TextField.new(name: "q[description]", label: t("payment_terms.columns.payment"), visually_hide_label: true, value: @filters[:description], placeholder: t("payment_terms.filters.search_placeholder"), full_width: true, size: :small)) %>
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <%= render(Primer::Alpha::TextField.new(name: "q[value]", label: t("payment_terms.columns.value"), visually_hide_label: true, value: @filters[:value], placeholder: "0.00", full_width: true, size: :small)) %>
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <select name="q[invoiced]" class="payment-terms--filter-select" style="width:100%; height:28px; font-size:12px; border:1px solid var(--borderColor-default, #d0d7de); border-radius:6px; padding:0 6px;">
+                <%= options_for_select([[t("payment_terms.filters.all"), ""], [t(:general_text_yes), "true"], [t(:general_text_no), "false"]], @filters[:invoiced]) %>
+              </select>
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <input type="month" name="q[expected_invoice_month]" value="<%= @filters[:expected_invoice_month] %>" class="payment-terms--filter-input" style="width:100%; height:28px; font-size:12px; border:1px solid var(--borderColor-default, #d0d7de); border-radius:6px; padding:0 6px;">
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <select name="q[collected]" class="payment-terms--filter-select" style="width:100%; height:28px; font-size:12px; border:1px solid var(--borderColor-default, #d0d7de); border-radius:6px; padding:0 6px;">
+                <%= options_for_select([[t("payment_terms.filters.all"), ""], [t(:general_text_yes), "true"], [t(:general_text_no), "false"]], @filters[:collected]) %>
+              </select>
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <%= render(Primer::Alpha::TextField.new(name: "q[invoice_number]", label: t("payment_terms.columns.invoice_number"), visually_hide_label: true, value: @filters[:invoice_number], placeholder: t("payment_terms.filters.search_placeholder"), full_width: true, size: :small)) %>
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <input type="month" name="q[invoice_month]" value="<%= @filters[:invoice_month] %>" class="payment-terms--filter-input" style="width:100%; height:28px; font-size:12px; border:1px solid var(--borderColor-default, #d0d7de); border-radius:6px; padding:0 6px;">
+            </td>
+            <td class="payment-terms--filter-cell" style="background-color: var(--bgColor-muted, #f6f8fa); border-bottom: 1px solid var(--borderColor-default, #d0d7de); padding: 4px 6px; vertical-align: middle;">
+              <%= render(Primer::Alpha::TextField.new(name: "q[comments]", label: t("payment_terms.columns.comments"), visually_hide_label: true, value: @filters[:comments], placeholder: t("payment_terms.filters.search_placeholder"), full_width: true, size: :small)) %>
+            </td>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @payments_by_project.empty? %>
+            <tr class="generic-table--empty-row"><td colspan="13"><%= t("payment_terms.my_projects.no_payments") %></td></tr>
+          <% else %>
+            <% @payments_by_project.each_with_index do |(project, payments), project_index| %>
+              <% payments.each_with_index do |payment, row_index| %>
+                <% row_color = payment_row_color_class(payment) %>
+                <tr>
+                  <% if row_index.zero? %>
+                    <td rowspan="<%= payments.size %>"><%= project_index + 1 %></td>
+                    <td rowspan="<%= payments.size %>"><%= link_to project.name, projects_payment_terms_path(project) %></td>
+                    <td rowspan="<%= payments.size %>"><%= @o_and_ds[project.id] %></td>
+                    <td rowspan="<%= payments.size %>">
+                      <%= render(Primer::Beta::Text.new(font_size: :small, color: :subtle)) { @account_managers[project.id] } %>
+                    </td>
+                    <td rowspan="<%= payments.size %>">
+                      <% Array(@project_managers[project.id]).each do |name| %>
+                        <div><%= render(Primer::Beta::Text.new(font_size: :small, color: :subtle)) { name } %></div>
+                      <% end %>
+                    </td>
+                  <% end %>
+                  <td class="<%= row_color %>"><%= payment.description %></td>
+                  <td class="<%= row_color %>"><%= number_to_currency(payment.value, unit: "QAR ", format: "%u%n") if payment.value %></td>
+                  <td class="<%= row_color %>"><%= payment.invoiced? ? t(:general_text_yes) : t(:general_text_no) %></td>
+                  <td class="<%= row_color %>"><%= format_date(payment.expected_invoice_date) %></td>
+                  <td class="<%= row_color %>"><%= payment.collected? ? t(:general_text_yes) : t(:general_text_no) %></td>
+                  <td class="<%= row_color %>"><%= payment.invoice_number %></td>
+                  <td class="<%= row_color %>"><%= format_date(payment.invoice_date) %></td>
+                  <td class="<%= row_color %>"><%= payment.comments %></td>
+                </tr>
+              <% end %>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>

@@ -1,0 +1,7 @@
+<%= @purchase_order.po_number %> (<%= @purchase_order.vendor&.name %>)
+<%= projects_edit_vendor_management_purchase_order_url(@purchase_order.project, @purchase_order) %>
+
+<%= t("vendor_management.notifications.po_needs_approval_body") %>
+
+<%= t("vendor_management.po_form.vendor_label") %>: <%= @purchase_order.vendor&.name %>
+<%= t("vendor_management.po_list_columns.total_value") %>: <%= number_to_currency(@purchase_order.total_value, unit: "#{@purchase_order.currency} ", format: "%u%n") %>

@@ -1,0 +1,77 @@
+<% html_title t("label_custom_branding") %>
+
+<div class="generic-table--container">
+  <h2><%= t("label_custom_branding") %></h2>
+  <p><%= t("custom_branding.description") %></p>
+
+  <%= form_with url: custom_branding_path, method: :patch, scope: :custom_branding, data: { turbo: false }, multipart: true do |f| %>
+    <fieldset class="form--fieldset">
+      <legend class="form--fieldset-legend"><%= t("custom_branding.logo_legend") %></legend>
+
+      <% if @custom_branding.logo.present? %>
+        <div class="form--field">
+          <div class="form--field-container">
+            <img src="<%= custom_branding_logo_path(digest: @custom_branding.digest) %>" style="max-height:60px;background:#333;padding:6px;border-radius:4px;">
+          </div>
+        </div>
+        <div class="form--field">
+          <label>
+            <%= f.check_box :remove_logo %>
+            <%= t("custom_branding.remove_logo") %>
+          </label>
+        </div>
+      <% end %>
+
+      <div class="form--field">
+        <label class="form--label" for="custom_branding_logo"><%= t("custom_branding.logo_label") %></label>
+        <div class="form--field-container">
+          <%= f.file_field :logo, accept: "image/png,image/jpeg,image/svg+xml,image/gif" %>
+        </div>
+        <p class="form--field-instructions"><%= t("custom_branding.logo_instructions") %></p>
+      </div>
+    </fieldset>
+
+    <fieldset class="form--fieldset">
+      <legend class="form--fieldset-legend"><%= t("custom_branding.colors_legend") %></legend>
+      <p><%= t("custom_branding.colors_description") %></p>
+
+      <% CustomBranding::Setting::COLOR_FIELDS.each do |field| %>
+        <% current_value = @custom_branding.public_send(field) %>
+        <div class="form--field">
+          <label class="form--label"><%= t("custom_branding.colors.#{field}") %></label>
+          <div class="form--field-container" style="display:flex;gap:8px;align-items:center;">
+            <input type="color"
+                   class="custom-branding--color-swatch"
+                   data-field="<%= field %>"
+                   value="<%= current_value.presence || "#1A67A3" %>">
+            <%= f.text_field field, value: current_value, id: "custom_branding_#{field}",
+                              class: "custom-branding--color-hex", data: { field: field },
+                              placeholder: "#RRGGBB", size: 10 %>
+          </div>
+          <p class="form--field-instructions"><%= t("custom_branding.instructions.#{field}") %></p>
+        </div>
+      <% end %>
+    </fieldset>
+
+    <div class="form--actions">
+      <%= f.submit t(:button_save), class: "button -highlight" %>
+    </div>
+  <% end %>
+
+  <%= nonced_javascript_tag do %>
+    document.querySelectorAll(".custom-branding--color-swatch").forEach(function (swatch) {
+      var hexInput = document.querySelector('.custom-branding--color-hex[data-field="' + swatch.dataset.field + '"]');
+      if (!hexInput) { return; }
+
+      swatch.addEventListener("input", function () {
+        hexInput.value = swatch.value;
+      });
+
+      hexInput.addEventListener("input", function () {
+        if (/^#[0-9A-Fa-f]{6}$/.test(hexInput.value)) {
+          swatch.value = hexInput.value;
+        }
+      });
+    });
+  <% end %>
+</div>

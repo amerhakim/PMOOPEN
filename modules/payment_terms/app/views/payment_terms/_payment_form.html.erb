@@ -1,0 +1,75 @@
+<%= form_with model: @payment, url: url, scope: "payment", local: true, data: { turbo: false } do |f| %>
+  <% if @payment.errors.any? %>
+    <div class="flash error"><%= @payment.errors.full_messages.join(", ") %></div>
+  <% end %>
+
+  <div class="form--field">
+    <label class="form--label" for="payment_description"><%= t("payment_terms.payment_form.description_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_area :description, rows: 3 %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="payment_percent"><%= t("payment_terms.payment_form.percent_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :percent, style: "width: 6em" %> %
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="payment_milestone_id"><%= t("payment_terms.payment_form.milestone_label") %></label>
+    <div class="form--field-container">
+      <%= f.select :milestone_id,
+                    options_from_collection_for_select(@milestones, :id, :subject, @payment.milestone_id),
+                    include_blank: t("payment_terms.payment_form.no_milestone") %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="payment_expected_invoice_date"><%= t("payment_terms.payment_form.expected_invoice_date_label") %></label>
+    <div class="form--field-container">
+      <%= f.date_field :expected_invoice_date, disabled: @payment.milestone_id.present? %>
+      <p class="op-form-hint"><%= t("payment_terms.payment_form.expected_invoice_date_hint") %></p>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="payment_invoiced"><%= t("payment_terms.payment_form.invoiced_label") %></label>
+    <div class="form--field-container">
+      <%= f.check_box :invoiced %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="payment_invoice_number"><%= t("payment_terms.payment_form.invoice_number_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :invoice_number %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="payment_invoice_date"><%= t("payment_terms.payment_form.invoice_date_label") %></label>
+    <div class="form--field-container">
+      <%= f.date_field :invoice_date %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="payment_collected"><%= t("payment_terms.payment_form.collected_label") %></label>
+    <div class="form--field-container">
+      <%= f.check_box :collected %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="payment_comments"><%= t("payment_terms.payment_form.comments_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_area :comments, rows: 3 %>
+    </div>
+  </div>
+
+  <div class="form--actions">
+    <%= f.submit t("payment_terms.payment_form.submit"), class: "button -highlight" %>
+  </div>
+<% end %>

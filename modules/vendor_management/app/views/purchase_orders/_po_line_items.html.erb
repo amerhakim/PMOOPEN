@@ -1,0 +1,82 @@
+<h3><%= t("vendor_management.purchase_orders.line_items_title") %></h3>
+
+<%= form_with url: projects_update_vendor_management_purchase_order_delivery_status_path(@project, @purchase_order), method: :patch, local: true, html: { id: "line_items_delivery_form" } do %>
+  <div class="generic-table--container">
+    <div class="generic-table--results-container">
+      <table class="generic-table">
+        <colgroup>
+          <col><col><col><col><col><col><col><col><col>
+          <% if can_edit? %><col><% end %>
+        </colgroup>
+        <thead>
+          <tr>
+            <% [
+              "delivered_to_qds", "delivered_to_customer", "part_no", "description",
+              "item_type", "quantity", "unit_price", "line_total", "section_label"
+            ].each do |column| %>
+              <th style="padding: 6px 8px;">
+                <%= t("vendor_management.po_columns.#{column}") %>
+              </th>
+            <% end %>
+            <% if can_edit? %><th></th><% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% @purchase_order.po_line_items.each do |line| %>
+            <tr>
+              <td>
+                <% if can_edit? %>
+                  <%= check_box_tag "delivered_to_qds_ids[]", line.id, line.delivered_to_qds?, id: "delivered_qds_#{line.id}" %>
+                <% else %>
+                  <%= line.delivered_to_qds? ? t(:general_text_yes) : t(:general_text_no) %>
+                <% end %>
+              </td>
+              <td>
+                <% if can_edit? %>
+                  <%= check_box_tag "delivered_to_customer_ids[]", line.id, line.delivered_to_customer?, id: "delivered_customer_#{line.id}" %>
+                <% else %>
+                  <%= line.delivered_to_customer? ? t(:general_text_yes) : t(:general_text_no) %>
+                <% end %>
+              </td>
+              <td><%= line.part_no %></td>
+              <td><%= line.description %></td>
+              <td><%= line.item_type %></td>
+              <td><%= line.quantity %></td>
+              <td><%= number_to_currency(line.unit_price, unit: "#{@purchase_order.currency} ", format: "%u%n") %></td>
+              <td><%= number_to_currency(line.line_total, unit: "#{@purchase_order.currency} ", format: "%u%n") %></td>
+              <td><%= line.section_label %></td>
+              <% if can_edit? %>
+                <td><%= link_to op_icon("icon icon-edit"), projects_edit_vendor_management_po_line_item_path(@project, line), title: t(:button_edit) %></td>
+              <% end %>
+            </tr>
+          <% end %>
+          <% if @purchase_order.po_line_items.empty? %>
+            <tr class="generic-table--empty-row">
+              <td colspan="10"><%= t("vendor_management.purchase_orders.no_line_items") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>
+
+<%= form_with url: projects_mark_all_delivered_vendor_management_purchase_order_path(@project, @purchase_order), method: :post, local: true, html: { id: "mark_all_qds_form" } do %>
+  <input type="hidden" name="target" value="qds">
+<% end %>
+<%= form_with url: projects_mark_all_delivered_vendor_management_purchase_order_path(@project, @purchase_order), method: :post, local: true, html: { id: "mark_all_customer_form" } do %>
+  <input type="hidden" name="target" value="customer">
+<% end %>
+
+<% if can_edit? %>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+    <%= render(Primer::Beta::Button.new(scheme: :primary, tag: :a, href: projects_new_vendor_management_po_line_item_path(@project, @purchase_order))) { t("vendor_management.purchase_orders.new_line_item") } %>
+    <%= render(Primer::Beta::Button.new(scheme: :primary, tag: :a, href: projects_import_new_vendor_management_po_line_items_path(@project, @purchase_order))) { t("vendor_management.line_item_import.link") } %>
+    <% if @purchase_order.po_line_items.any? %>
+      <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary, form: "line_items_delivery_form")) { t("vendor_management.purchase_orders.save_delivery_status") } %>
+      <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary, form: "mark_all_qds_form", data: { confirm: t("vendor_management.purchase_orders.mark_all_delivered_confirm") })) { t("vendor_management.purchase_orders.mark_all_delivered_qds") } %>
+      <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary, form: "mark_all_customer_form", data: { confirm: t("vendor_management.purchase_orders.mark_all_delivered_confirm") })) { t("vendor_management.purchase_orders.mark_all_delivered_customer") } %>
+    <% end %>
+  </div>
+<% end %>
+

@@ -1,0 +1,10 @@
+<%= content_tag(:tr,
+                id: row_css_id,
+                class: row_css_class
+    ) do %>
+  <% columns.each do |column| %>
+    <td class="<%= column_css_class(column) %>">
+      <%= column_value(column) %>
+    </td>
+  <% end %>
+<% end %>

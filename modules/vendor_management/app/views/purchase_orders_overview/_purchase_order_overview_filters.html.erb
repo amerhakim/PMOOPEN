@@ -1,0 +1,42 @@
+<%= form_with url: vendor_management_purchase_orders_overview_path, method: :get, local: true do %>
+  <div class="vendor-management-filters" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:8px;">
+    <div>
+      <label class="form--label" for="q_po_number"><%= t("vendor_management.po_filters.po_number") %></label><br>
+      <%= text_field_tag "q[po_number]", filters[:po_number], id: "q_po_number", class: "form--text-field", style: "width:130px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_project_id"><%= t("vendor_management.purchase_orders_overview.project_label") %></label><br>
+      <%= select_tag "q[project_id]",
+                      options_for_select([[t("vendor_management.po_filters.all"), ""]] + Project.allowed_to(User.current, :view_vendor_management).order(:name).pluck(:name, :id), filters[:project_id]),
+                      id: "q_project_id", class: "form--select", style: "width:160px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_vendor_id"><%= t("vendor_management.po_filters.vendor") %></label><br>
+      <%= select_tag "q[vendor_id]",
+                      options_for_select([[t("vendor_management.po_filters.all"), ""]] + VendorManagement::Vendor.order(:name).pluck(:name, :id), filters[:vendor_id]),
+                      id: "q_vendor_id", class: "form--select", style: "width:140px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_currency"><%= t("vendor_management.po_filters.currency") %></label><br>
+      <%= select_tag "q[currency]",
+                      options_for_select([[t("vendor_management.po_filters.all"), ""]] + VendorManagement::PurchaseOrder::CURRENCIES.map { |c| [c, c] }, filters[:currency]),
+                      id: "q_currency", class: "form--select", style: "width:90px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_status"><%= t("vendor_management.po_filters.status") %></label><br>
+      <%= select_tag "q[status]",
+                      options_for_select([[t("vendor_management.po_filters.all"), ""]] + VendorManagement::PurchaseOrder::STATUSES.map { |s| [s.humanize, s] }, filters[:status]),
+                      id: "q_status", class: "form--select", style: "width:110px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_payment_status"><%= t("vendor_management.po_filters.payment_status") %></label><br>
+      <%= select_tag "q[payment_status]",
+                      options_for_select([[t("vendor_management.po_filters.all"), ""]] + VendorManagement::PurchaseOrder::PAYMENT_STATUSES.map { |s| [s.humanize, s] }, filters[:payment_status]),
+                      id: "q_payment_status", class: "form--select", style: "width:130px;" %>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary)) { t("vendor_management.po_filters.apply") } %>
+      <%= render(Primer::Beta::Button.new(scheme: :primary, tag: :a, href: vendor_management_purchase_orders_overview_path)) { t("vendor_management.po_filters.clear") } %>
+    </div>
+  </div>
+<% end %>

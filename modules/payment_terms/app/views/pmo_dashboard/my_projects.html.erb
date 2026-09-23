@@ -1,0 +1,91 @@
+<% html_title t("pmo_dashboard.my_projects_title") %>
+
+
+<% if @summaries.empty? %>
+  <h2><%= t("pmo_dashboard.my_projects_title") %></h2>
+  <p><%= t("pmo_dashboard.no_projects") %></p>
+<% else %>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <h1 style="font-size: 24px; font-weight: 600; color: #0d1b2a; margin: 0;"><%= t("pmo_dashboard.my_projects_title") %></h1>
+    <div id="pmoPageIndicator" style="font-size: 13px; color: #6b7280; font-weight: 600;"></div>
+  </div>
+
+  <div style="display: flex; align-items: flex-start; gap: 16px;">
+    <button id="pmoPrevBtn" type="button"
+            style="background: white; border: 0.5px solid #e5e7eb; width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #0d1b2a; font-size: 20px; flex-shrink: 0;">&larr;</button>
+
+    <div id="pmoCardsContainer" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; flex: 1;">
+      <% @summaries.each_with_index do |summary, index| %>
+        <div class="pmo-slide" data-index="<%= index %>" style="min-width: 0; height: 850px;">
+          <%= render "card", summary: summary %>
+        </div>
+      <% end %>
+    </div>
+
+    <button id="pmoNextBtn" type="button"
+            style="background: white; border: 0.5px solid #e5e7eb; width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #0d1b2a; font-size: 20px; flex-shrink: 0;">&rarr;</button>
+  </div>
+
+  <div id="pmoDots" style="display: flex; justify-content: center; gap: 8px; margin-top: 24px;"></div>
+
+  <%# OpenProject's CSP (script-src, no 'unsafe-inline') blocks a plain
+      <script> tag outright, and blocks inline onclick="..." attributes
+      even with a nonce (CSP's script-src-attr has no nonce exception for
+      event-handler attributes) -- so this needs Rails' nonce-aware
+      javascript_tag helper, and the buttons above are wired up here via
+      addEventListener instead of onclick=. %>
+  <%= javascript_tag nonce: true do %>
+    (function () {
+      var perPage = 3;
+      var slides = Array.prototype.slice.call(document.querySelectorAll('#pmoCardsContainer .pmo-slide'));
+      var total = slides.length;
+      var totalPages = Math.ceil(total / perPage);
+      var currentIndex = 0;
+
+      var prevBtn = document.getElementById('pmoPrevBtn');
+      var nextBtn = document.getElementById('pmoNextBtn');
+
+      function render() {
+        slides.forEach(function (slide, i) {
+          slide.style.display = (i >= currentIndex && i < currentIndex + perPage) ? '' : 'none';
+        });
+
+        var indicator = document.getElementById('pmoPageIndicator');
+        var last = Math.min(currentIndex + perPage, total);
+        indicator.textContent = (currentIndex + 1) + ' - ' + last + ' of ' + total;
+
+        var canLeft = currentIndex > 0;
+        var canRight = currentIndex + perPage < total;
+        prevBtn.style.cursor = canLeft ? 'pointer' : 'not-allowed';
+        prevBtn.style.color = canLeft ? '#0d1b2a' : '#9ca3af';
+        prevBtn.disabled = !canLeft;
+        nextBtn.style.cursor = canRight ? 'pointer' : 'not-allowed';
+        nextBtn.style.color = canRight ? '#0d1b2a' : '#9ca3af';
+        nextBtn.disabled = !canRight;
+
+        var dots = document.getElementById('pmoDots');
+        dots.innerHTML = '';
+        for (var p = 0; p < totalPages; p++) {
+          var dot = document.createElement('button');
+          dot.type = 'button';
+          var active = currentIndex === p * perPage;
+          dot.style.cssText = 'width:' + (active ? 24 : 8) + 'px;height:8px;border-radius:4px;background:' +
+            (active ? '#0d1b2a' : '#d1d5db') + ';border:none;cursor:pointer;';
+          (function (page) {
+            dot.addEventListener('click', function () { currentIndex = page * perPage; render(); });
+          })(p);
+          dots.appendChild(dot);
+        }
+      }
+
+      prevBtn.addEventListener('click', function () {
+        if (currentIndex > 0) { currentIndex -= perPage; render(); }
+      });
+      nextBtn.addEventListener('click', function () {
+        if (currentIndex + perPage < total) { currentIndex += perPage; render(); }
+      });
+
+      render();
+    })();
+  <% end %>
+<% end %>

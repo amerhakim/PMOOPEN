@@ -1,0 +1,28 @@
+<% html_title t("label_ms_project_import") %>
+
+<% status = @import.job_status&.status %>
+
+<% unless %w[success failure error].include?(status) %>
+  <meta http-equiv="refresh" content="3">
+<% end %>
+
+<div class="generic-table--container">
+  <h2><%= t("label_ms_project_import") %></h2>
+
+  <p><strong><%= @import.original_filename %></strong></p>
+
+  <% case status %>
+  <% when "success" %>
+    <p class="flash notice">
+      <%= t("ms_project_import.success", tasks: @import.tasks_created_count, relations: @import.relations_created_count) %>
+    </p>
+    <%= link_to t("ms_project_import.show.view_work_packages"), project_work_packages_path(@project) %>
+  <% when "failure", "error" %>
+    <p class="flash error">
+      <%= @import.error_message.presence || @import.job_status&.message || t("ms_project_import.errors.generic") %>
+    </p>
+    <%= link_to t("ms_project_import.show.try_again"), new_projects_ms_project_import_path(@project) %>
+  <% else %>
+    <p><%= t("ms_project_import.show.in_progress") %></p>
+  <% end %>
+</div>

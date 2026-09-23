@@ -1,0 +1,20 @@
+<% html_title t("label_ms_project_import") %>
+
+<div class="generic-table--container">
+  <h2><%= t("label_ms_project_import") %></h2>
+
+  <p><%= t("ms_project_import.new.description") %></p>
+
+  <%= form_tag projects_ms_project_imports_path(@project), multipart: true do %>
+    <div class="form--field">
+      <label class="form--label" for="file"><%= t("ms_project_import.new.file_label") %></label>
+      <div class="form--field-container">
+        <%= file_field_tag :file, accept: ".mpp,.mpx,.xml,.planner", required: true %>
+      </div>
+    </div>
+
+    <div class="form--actions">
+      <%= submit_tag t("ms_project_import.new.submit"), class: "button -highlight" %>
+    </div>
+  <% end %>
+</div>

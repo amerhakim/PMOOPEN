@@ -1,0 +1,61 @@
+<% html_title t("label_raid_log_ai_assist") %>
+
+<div class="generic-table--container">
+  <h2><%= t("raid_log.propose.title", type: t("raid_log.types.#{@type.name.downcase}")) %></h2>
+
+  <p><%= t("raid_log.propose.description") %></p>
+
+  <%= form_tag projects_raid_log_assistant_path(@project), data: { turbo: false } do %>
+    <%= hidden_field_tag :type_name, @type.name %>
+
+    <% @suggestions.each_with_index do |entry, index| %>
+      <fieldset class="form--fieldset">
+        <legend>
+          <label>
+            <%= check_box_tag "entries[#{index}][include]", "1", true %>
+            <%= t("raid_log.propose.include_this_entry") %>
+          </label>
+        </legend>
+
+        <div class="form--field">
+          <label class="form--label"><%= t("raid_log.propose.subject_label") %></label>
+          <div class="form--field-container">
+            <%= text_field_tag "entries[#{index}][subject]", entry[:subject], size: 60 %>
+          </div>
+        </div>
+
+        <div class="form--field">
+          <label class="form--label"><%= t("raid_log.propose.description_label") %></label>
+          <div class="form--field-container">
+            <%= text_area_tag "entries[#{index}][description]", entry[:description], rows: 2, cols: 60 %>
+          </div>
+        </div>
+
+        <% @field_spec.each do |field| %>
+          <div class="form--field">
+            <label class="form--label"><%= field[:name] %></label>
+            <div class="form--field-container">
+              <% suggested_value = entry[:custom_field_values][field[:id]] %>
+              <% if field[:format] == "list" %>
+                <% options = WorkPackageCustomField.find(field[:id]).custom_options.order(:position) %>
+                <%= select_tag "entries[#{index}][custom_fields][#{field[:id]}]",
+                                options_for_select([[t("raid_log.propose.blank_option"), ""]] +
+                                                    options.map { |o| [o.value, o.id.to_s] },
+                                                    suggested_value) %>
+              <% elsif field[:format] == "date" %>
+                <%= date_field_tag "entries[#{index}][custom_fields][#{field[:id]}]", suggested_value %>
+              <% else %>
+                <%= text_field_tag "entries[#{index}][custom_fields][#{field[:id]}]", suggested_value, size: 60 %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </fieldset>
+    <% end %>
+
+    <div class="form--actions">
+      <%= submit_tag t("raid_log.propose.submit"), class: "button -highlight" %>
+      <%= link_to t("raid_log.propose.start_over"), projects_new_raid_log_assistant_path(@project, type_name: @type.name) %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,30 @@
+<% html_title t("impersonation.title") %>
+
+<div class="generic-table--container">
+  <h2><%= t("impersonation.title") %></h2>
+  <p class="op-form-hint"><%= t("impersonation.hint") %></p>
+
+  <table class="generic-table">
+    <thead>
+      <tr>
+        <th><%= t("impersonation.columns.login") %></th>
+        <th><%= t("impersonation.columns.name") %></th>
+        <th><%= t("impersonation.columns.mail") %></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @users.each do |user| %>
+        <tr>
+          <td><%= user.login %></td>
+          <td><%= user.name %></td>
+          <td><%= user.mail %></td>
+          <td>
+            <%= link_to t("impersonation.login_as"), impersonation_create_path(user_id: user.id),
+                        data: { turbo_method: :post } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,37 @@
+<% html_title t("vendor_management.po_template.title") %>
+
+<div class="generic-table--container">
+  <h2><%= t("vendor_management.po_template.title") %></h2>
+  <p class="op-form-hint"><%= t("vendor_management.po_template.hint") %></p>
+
+  <%= form_with model: @template, url: vendor_management_po_template_path, method: :patch, scope: "po_template", local: true do |f| %>
+    <% if @template.errors.any? %>
+      <div class="flash error"><%= @template.errors.full_messages.join(", ") %></div>
+    <% end %>
+
+    <div class="form--field">
+      <label class="form--label" for="po_template_header_text_ar"><%= t("vendor_management.po_template.header_text_ar_label") %></label>
+      <div class="form--field-container">
+        <%= f.text_area :header_text_ar, rows: 2, dir: "rtl" %>
+      </div>
+    </div>
+
+    <div class="form--field">
+      <label class="form--label" for="po_template_header_text"><%= t("vendor_management.po_template.header_text_label") %></label>
+      <div class="form--field-container">
+        <%= f.text_area :header_text, rows: 3 %>
+      </div>
+    </div>
+
+    <div class="form--field">
+      <label class="form--label" for="po_template_footer_text"><%= t("vendor_management.po_template.footer_text_label") %></label>
+      <div class="form--field-container">
+        <%= f.text_area :footer_text, rows: 2 %>
+      </div>
+    </div>
+
+    <div class="form--actions">
+      <%= f.submit t("vendor_management.po_template.submit"), class: "button -highlight" %>
+    </div>
+  <% end %>
+</div>

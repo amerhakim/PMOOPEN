@@ -1,0 +1,38 @@
+<% html_title t("vendor_management.approval_chain.title") %>
+
+<div class="generic-table--container">
+  <h2><%= t("vendor_management.approval_chain.title") %></h2>
+  <p class="op-form-hint"><%= t("vendor_management.approval_chain.hint") %></p>
+
+  <table class="generic-table">
+    <thead>
+      <tr>
+        <th><%= t("vendor_management.approval_chain_columns.sequence") %></th>
+        <th><%= t("vendor_management.approval_chain_columns.approver_title") %></th>
+        <th><%= t("vendor_management.approval_chain_columns.role") %></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @steps.each do |step| %>
+        <tr>
+          <td><%= step.sequence %></td>
+          <td><%= step.approver_title %></td>
+          <td><%= step.role&.name %></td>
+          <td>
+            <%= link_to t("vendor_management.approval_chain.edit"), edit_vendor_management_approval_step_path(step) %>
+            |
+            <%= link_to t("vendor_management.approval_chain.delete"), vendor_management_approval_step_path(step),
+                        data: { confirm: t("text_are_you_sure"), turbo_method: :delete } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <% if @steps.empty? %>
+    <p><%= t("vendor_management.approval_chain.no_steps") %></p>
+  <% end %>
+
+  <p><%= link_to t("vendor_management.approval_chain.new_step"), new_vendor_management_approval_step_path, class: "button -highlight" %></p>
+</div>

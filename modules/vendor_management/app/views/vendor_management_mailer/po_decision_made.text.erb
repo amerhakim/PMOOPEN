@@ -1,0 +1,4 @@
+<%= @purchase_order.po_number %> (<%= @purchase_order.vendor&.name %>)
+<%= projects_edit_vendor_management_purchase_order_url(@purchase_order.project, @purchase_order) %>
+
+<%= t("vendor_management.notifications.po_decision_body.#{@purchase_order.status}") %>

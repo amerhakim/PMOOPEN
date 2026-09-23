@@ -1,0 +1,5 @@
+<p>
+  <%= link_to(@payment.description, projects_edit_payment_terms_payment_url(@payment.project, @payment)) %>
+</p>
+
+<p><%= t("payment_terms.notifications.invoice_overdue_body", date: @payment.expected_invoice_date.to_fs(:long)) %></p>

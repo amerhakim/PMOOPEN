@@ -1,0 +1,44 @@
+<%= form_with model: @payment, url: url, scope: "po_payment", local: true, data: { turbo: false } do |f| %>
+  <% if @payment.errors.any? %>
+    <div class="flash error"><%= @payment.errors.full_messages.join(", ") %></div>
+  <% end %>
+
+  <div class="form--field">
+    <label class="form--label" for="po_payment_paid_on"><%= t("vendor_management.payments.date") %></label>
+    <div class="form--field-container">
+      <%= f.date_field :paid_on %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="po_payment_invoice_no"><%= t("vendor_management.payments.invoice_no") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :invoice_no %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="po_payment_amount"><%= t("vendor_management.payments.amount") %></label>
+    <div class="form--field-container">
+      <%= f.number_field :amount, step: "0.01" %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="po_payment_description"><%= t("vendor_management.payments.description") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :description %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="po_payment_note"><%= t("vendor_management.payments.note") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :note %>
+    </div>
+  </div>
+
+  <div class="form--actions">
+    <%= f.submit t("vendor_management.payment_form.submit"), class: "button -highlight" %>
+  </div>
+<% end %>

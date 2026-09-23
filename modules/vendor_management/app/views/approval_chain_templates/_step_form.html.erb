@@ -1,0 +1,30 @@
+<%= form_with model: @step, url: url, scope: "approval_step_definition", local: true, data: { turbo: false } do |f| %>
+  <% if @step.errors.any? %>
+    <div class="flash error"><%= @step.errors.full_messages.join(", ") %></div>
+  <% end %>
+
+  <div class="form--field">
+    <label class="form--label" for="approval_step_definition_sequence"><%= t("vendor_management.approval_step_form.sequence_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :sequence %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="approval_step_definition_approver_title"><%= t("vendor_management.approval_step_form.approver_title_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :approver_title %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="approval_step_definition_role_id"><%= t("vendor_management.approval_step_form.role_label") %></label>
+    <div class="form--field-container">
+      <%= f.select :role_id, Role.where(type: "ProjectRole").order(:name).map { |r| [r.name, r.id] }, include_blank: true %>
+    </div>
+  </div>
+
+  <div class="form--actions">
+    <%= f.submit t("vendor_management.approval_step_form.submit"), class: "button -highlight" %>
+  </div>
+<% end %>
