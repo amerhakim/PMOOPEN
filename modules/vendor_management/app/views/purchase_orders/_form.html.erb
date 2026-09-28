@@ -1,0 +1,189 @@
+<%= form_with model: @purchase_order, url: url, scope: "purchase_order", local: true, multipart: true, data: { turbo: false } do |f| %>
+  <% if @purchase_order.errors.any? %>
+    <div class="flash error"><%= @purchase_order.errors.full_messages.join(", ") %></div>
+  <% end %>
+
+  <div class="form--field-group-header" style="background: var(--accent-color); color: var(--list-header-font-color); padding: 8px 12px; margin: 16px 0 12px; font-weight: bold;">
+    <%= t("vendor_management.po_form.client_information_section") %>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_end_user_name"><%= t("vendor_management.po_form.end_user_name_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :end_user_name %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_end_user_address"><%= t("vendor_management.po_form.end_user_address_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :end_user_address %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_end_user_contact_name"><%= t("vendor_management.po_form.end_user_contact_name_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :end_user_contact_name %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_end_user_contact_phone"><%= t("vendor_management.po_form.end_user_contact_phone_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :end_user_contact_phone %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_end_user_contact_email"><%= t("vendor_management.po_form.end_user_contact_email_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :end_user_contact_email %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_incoterm"><%= t("vendor_management.po_form.incoterm_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :incoterm %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_delivery_address"><%= t("vendor_management.po_form.delivery_address_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :delivery_address %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_delivery_contact"><%= t("vendor_management.po_form.delivery_contact_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :delivery_contact %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_quotation_file"><%= t("vendor_management.po_form.quotation_file_label") %></label>
+    <div class="form--field-container">
+      <% if @purchase_order.persisted? && @purchase_order.quotation_file_attached? %>
+        <p>
+          <%= link_to "#{t('vendor_management.po_form.quotation_file_current')}: #{@purchase_order.quotation_file_filename}",
+                      projects_vendor_management_purchase_order_quotation_file_path(@project, @purchase_order), target: "_blank" %>
+          &mdash;
+          <%= link_to t("vendor_management.po_form.quotation_file_remove"),
+                      projects_destroy_vendor_management_purchase_order_quotation_file_path(@project, @purchase_order),
+                      data: { turbo_method: :delete, turbo_confirm: t("text_are_you_sure") } %>
+        </p>
+      <% end %>
+      <%= f.file_field :quotation_file %>
+    </div>
+  </div>
+
+  <div class="form--field-group-header" style="background: var(--accent-color); color: var(--list-header-font-color); padding: 8px 12px; margin: 16px 0 12px; font-weight: bold;">
+    <%= t("vendor_management.po_form.purchase_order_section") %>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_vendor_id"><%= t("vendor_management.po_form.vendor_label") %></label>
+    <div class="form--field-container">
+      <%= f.select :vendor_id, @vendors.map { |v| [v.name, v.id] }, include_blank: true %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_po_number"><%= t("vendor_management.po_form.po_number_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :po_number %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_o_and_d"><%= t("vendor_management.po_form.o_and_d_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :o_and_d %>
+      <p class="form--field-instructions"><%= t("vendor_management.po_form.o_and_d_hint") %></p>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_order_description"><%= t("vendor_management.po_form.order_description_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_area :order_description, rows: 2 %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_quotation_ref_no"><%= t("vendor_management.po_form.quotation_ref_no_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :quotation_ref_no %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_issue_date"><%= t("vendor_management.po_form.issue_date_label") %></label>
+    <div class="form--field-container">
+      <%= f.date_field :issue_date %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_currency"><%= t("vendor_management.po_form.currency_label") %></label>
+    <div class="form--field-container">
+      <%= f.select :currency, VendorManagement::PurchaseOrder::CURRENCIES %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_total_value"><%= t("vendor_management.po_form.total_value_label") %></label>
+    <div class="form--field-container">
+      <% if @purchase_order.po_line_items.exists? %>
+        <%= number_to_currency(@purchase_order.total_value, unit: "#{@purchase_order.currency} ", format: "%u%n") %>
+        <p class="form--field-instructions"><%= t("vendor_management.po_form.total_value_derived_hint") %></p>
+      <% else %>
+        <%= f.number_field :total_value, step: "0.01", min: 0 %>
+        <p class="form--field-instructions"><%= t("vendor_management.po_form.total_value_manual_hint") %></p>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_status"><%= t("vendor_management.po_form.status_label") %></label>
+    <div class="form--field-container">
+      <%= f.select :status, VendorManagement::PurchaseOrder::STATUSES.map { |s| [s.humanize, s] } %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_expected_end_date"><%= t("vendor_management.po_form.expected_end_date_label") %></label>
+    <div class="form--field-container">
+      <%= f.date_field :expected_end_date %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_payment_terms"><%= t("vendor_management.po_form.payment_terms_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_area :payment_terms, rows: 3 %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_special_note"><%= t("vendor_management.po_form.special_note_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_area :special_note, rows: 2 %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_is_non_cancellable">
+      <%= f.check_box :is_non_cancellable %>
+      <%= t("vendor_management.po_form.is_non_cancellable_label") %>
+    </label>
+  </div>
+
+  <div class="form--actions">
+    <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary)) { t("vendor_management.po_form.submit") } %>
+  </div>
+<% end %>
+

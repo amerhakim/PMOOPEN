@@ -1,0 +1,44 @@
+<%=
+component_wrapper do
+  flex_layout do |flex|
+    flex.with_row do
+      render(Primer::OpenProject::SubHeader.new) do |subheader|
+        subheader.with_action_button(
+          scheme: :primary,
+          leading_icon: :download,
+          label: t("vendor_management.purchase_orders.export_link"),
+          tag: :a,
+          href: helpers.projects_export_vendor_management_purchase_orders_path(project)
+        ) { t("vendor_management.purchase_orders.export_link") }
+
+        if can_edit
+          subheader.with_action_button(
+            scheme: :primary,
+            leading_icon: :upload,
+            label: t("vendor_management.purchase_orders.import_link"),
+            tag: :a,
+            href: helpers.projects_import_new_vendor_management_purchase_orders_path(project)
+          ) { t("vendor_management.purchase_orders.import_link") }
+
+          subheader.with_action_button(
+            scheme: :primary,
+            leading_icon: :plus,
+            label: t("vendor_management.purchase_orders.new_po"),
+            tag: :a,
+            href: helpers.projects_new_vendor_management_purchase_order_path(project),
+            test_selector: "add-po-button"
+          ) { t("vendor_management.purchase_orders.new_po") }
+        end
+      end
+    end
+
+    flex.with_row(mt: 3) do
+      helpers.render(partial: "purchase_orders/purchase_order_filters", locals: { filters: filters, project: project })
+    end
+
+    flex.with_row do
+      render(VendorManagement::PurchaseOrders::TableComponent.new(rows: purchase_orders, can_edit: can_edit, project: project))
+    end
+  end
+end
+%>

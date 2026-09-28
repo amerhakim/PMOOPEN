@@ -1,0 +1,310 @@
+<% html_title t("vendor_management.po_template.designer_title") %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { t("vendor_management.po_template.designer_title") }
+    header.with_breadcrumbs([
+      { href: vendor_management_vendors_path, text: t("vendor_management.index.title") },
+      t("vendor_management.po_template.designer_title")
+    ])
+  end
+%>
+
+<p class="op-form-hint"><%= t("vendor_management.po_template.designer_hint") %></p>
+
+<% if flash[:alert] %>
+  <div class="flash error"><%= flash[:alert] %></div>
+<% end %>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap; margin-top:12px;">
+  <div>
+    <div id="pdf-canvas" style="position:relative; width:595px; height:842px; border:1px solid #999; background:#fff; overflow:hidden;"></div>
+  </div>
+
+  <div style="min-width:280px;">
+    <%= form_with url: update_layout_vendor_management_po_template_path, method: :patch, local: true, data: { turbo: false }, html: { id: "layout-form" } do |f| %>
+      <%= f.hidden_field :layout_json, id: "layout-json-field" %>
+
+      <h3><%= t("vendor_management.po_template.designer_page1") %></h3>
+      <p class="form--field-instructions"><%= t("vendor_management.po_template.designer_flow_hint") %></p>
+      <ul id="flow-list-1" style="list-style:none; padding:0;"></ul>
+
+      <h3><%= t("vendor_management.po_template.designer_page2") %></h3>
+      <p class="form--field-instructions"><%= t("vendor_management.po_template.designer_flow_hint") %></p>
+      <ul id="flow-list-2" style="list-style:none; padding:0;"></ul>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;">
+        <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary)) { t("vendor_management.po_template.save_layout") } %>
+        <%= render(Primer::Beta::Button.new(tag: :a, href: preview_vendor_management_po_template_path, target: "_blank")) { t("vendor_management.po_template.preview_pdf") } %>
+        <%= render(Primer::Beta::Button.new(tag: :button, type: :button, id: "reset-layout-button")) { t("vendor_management.po_template.reset_to_default") } %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%= nonced_javascript_tag do %>
+(function () {
+  "use strict";
+
+  var CANVAS_W = 595, CANVAS_H = 842, MIN_W = 30, MIN_H = 16;
+
+  var labels = <%= raw VendorManagement::PoTemplate::BLOCK_IDS.index_with { |id| t("vendor_management.po_template.block_#{id}") }.to_json %>;
+  var defaultLayout = <%= raw @default_layout.to_json %>;
+  var initialLayout = <%= raw @template.layout.to_json %>;
+
+  var canvas = document.getElementById("pdf-canvas");
+  var flowList1 = document.getElementById("flow-list-1");
+  var flowList2 = document.getElementById("flow-list-2");
+  var hiddenField = document.getElementById("layout-json-field");
+  var form = document.getElementById("layout-form");
+
+  function buildFromLayout(layout) {
+    canvas.innerHTML = "";
+    flowList1.innerHTML = "";
+    flowList2.innerHTML = "";
+
+    layout.forEach(function (block) {
+      if (block.kind === "fixed") {
+        canvas.appendChild(buildFixedBlock(block));
+      } else {
+        var list = block.page === 2 ? flowList2 : flowList1;
+        list.appendChild(buildFlowItem(block));
+      }
+    });
+
+    Array.prototype.slice.call(flowList1.children)
+      .sort(function (a, b) { return Number(a.dataset.order) - Number(b.dataset.order); })
+      .forEach(function (li) { flowList1.appendChild(li); });
+    Array.prototype.slice.call(flowList2.children)
+      .sort(function (a, b) { return Number(a.dataset.order) - Number(b.dataset.order); })
+      .forEach(function (li) { flowList2.appendChild(li); });
+  }
+
+  function buildFixedBlock(block) {
+    var div = document.createElement("div");
+    div.className = "pdf-block";
+    div.dataset.id = block.id;
+    div.style.position = "absolute";
+    div.style.left = block.x + "px";
+    div.style.top = block.y + "px";
+    div.style.width = block.w + "px";
+    div.style.height = block.h + "px";
+    div.style.border = "1px dashed #4a90d9";
+    div.style.background = "rgba(74,144,217,0.08)";
+    div.style.boxSizing = "border-box";
+    div.style.fontSize = "11px";
+    div.style.color = "#333";
+    div.style.cursor = "move";
+    div.style.userSelect = "none";
+    div.style.opacity = block.visible === false ? "0.35" : "1";
+
+    var labelRow = document.createElement("div");
+    labelRow.style.display = "flex";
+    labelRow.style.alignItems = "center";
+    labelRow.style.gap = "4px";
+    labelRow.style.padding = "2px 4px";
+    labelRow.style.background = "#4a90d9";
+    labelRow.style.color = "#fff";
+
+    var checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = block.visible !== false;
+    checkbox.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    checkbox.addEventListener("change", function () {
+      div.dataset.visible = checkbox.checked ? "true" : "false";
+      div.style.opacity = checkbox.checked ? "1" : "0.35";
+    });
+    div.dataset.visible = block.visible !== false ? "true" : "false";
+
+    var labelText = document.createElement("span");
+    labelText.textContent = labels[block.id] || block.id;
+
+    labelRow.appendChild(checkbox);
+    labelRow.appendChild(labelText);
+    div.appendChild(labelRow);
+
+    var handle = document.createElement("div");
+    handle.style.position = "absolute";
+    handle.style.right = "0";
+    handle.style.bottom = "0";
+    handle.style.width = "10px";
+    handle.style.height = "10px";
+    handle.style.cursor = "nwse-resize";
+    handle.style.background = "#4a90d9";
+    div.appendChild(handle);
+
+    makeDraggable(div);
+    makeResizable(div, handle);
+
+    return div;
+  }
+
+  function buildFlowItem(block) {
+    var li = document.createElement("li");
+    li.className = "pdf-flow-item";
+    li.draggable = true;
+    li.dataset.id = block.id;
+    li.dataset.x = block.x;
+    li.dataset.w = block.w;
+    li.dataset.order = block.order;
+    li.style.border = "1px solid #ccc";
+    li.style.borderRadius = "4px";
+    li.style.padding = "6px 8px";
+    li.style.marginBottom = "6px";
+    li.style.background = "#f8f8f8";
+    li.style.display = "flex";
+    li.style.alignItems = "center";
+    li.style.gap = "6px";
+    li.style.cursor = "grab";
+    li.style.opacity = block.visible === false ? "0.5" : "1";
+
+    var checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = block.visible !== false;
+    checkbox.addEventListener("change", function () {
+      li.dataset.visible = checkbox.checked ? "true" : "false";
+      li.style.opacity = checkbox.checked ? "1" : "0.5";
+    });
+    li.dataset.visible = block.visible !== false ? "true" : "false";
+
+    var span = document.createElement("span");
+    span.textContent = labels[block.id] || block.id;
+
+    li.appendChild(checkbox);
+    li.appendChild(span);
+
+    li.addEventListener("dragstart", function (e) {
+      e.dataTransfer.setData("text/plain", block.id);
+      li.classList.add("dragging");
+    });
+    li.addEventListener("dragend", function () { li.classList.remove("dragging"); });
+
+    return li;
+  }
+
+  [flowList1, flowList2].forEach(function (list) {
+    list.addEventListener("dragover", function (e) {
+      e.preventDefault();
+      var dragging = list.querySelector(".dragging");
+      if (!dragging) return;
+      var after = getDragAfterElement(list, e.clientY);
+      if (after == null) {
+        list.appendChild(dragging);
+      } else {
+        list.insertBefore(dragging, after);
+      }
+    });
+  });
+
+  function getDragAfterElement(list, y) {
+    var items = Array.prototype.slice.call(list.querySelectorAll(".pdf-flow-item:not(.dragging)"));
+    var closest = { offset: -Infinity, element: null };
+    items.forEach(function (item) {
+      var box = item.getBoundingClientRect();
+      var offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        closest = { offset: offset, element: item };
+      }
+    });
+    return closest.element;
+  }
+
+  function makeDraggable(el) {
+    el.addEventListener("pointerdown", function (e) {
+      if (e.target !== el && e.target.tagName !== "SPAN" && e.target !== el.firstChild) {
+        if (e.target.style.cursor === "nwse-resize" || e.target.type === "checkbox") return;
+      }
+      e.preventDefault();
+      var startX = e.clientX, startY = e.clientY;
+      var startLeft = el.offsetLeft, startTop = el.offsetTop;
+      el.setPointerCapture(e.pointerId);
+
+      function onMove(ev) {
+        var newLeft = startLeft + (ev.clientX - startX);
+        var newTop = startTop + (ev.clientY - startY);
+        newLeft = Math.max(0, Math.min(newLeft, CANVAS_W - el.offsetWidth));
+        newTop = Math.max(0, Math.min(newTop, CANVAS_H - el.offsetHeight));
+        el.style.left = newLeft + "px";
+        el.style.top = newTop + "px";
+      }
+      function onUp(ev) {
+        el.releasePointerCapture(ev.pointerId);
+        el.removeEventListener("pointermove", onMove);
+        el.removeEventListener("pointerup", onUp);
+      }
+      el.addEventListener("pointermove", onMove);
+      el.addEventListener("pointerup", onUp);
+    });
+  }
+
+  function makeResizable(el, handle) {
+    handle.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var startX = e.clientX, startY = e.clientY;
+      var startW = el.offsetWidth, startH = el.offsetHeight;
+      handle.setPointerCapture(e.pointerId);
+
+      function onMove(ev) {
+        var newW = Math.max(MIN_W, startW + (ev.clientX - startX));
+        var newH = Math.max(MIN_H, startH + (ev.clientY - startY));
+        newW = Math.min(newW, CANVAS_W - el.offsetLeft);
+        newH = Math.min(newH, CANVAS_H - el.offsetTop);
+        el.style.width = newW + "px";
+        el.style.height = newH + "px";
+      }
+      function onUp(ev) {
+        handle.releasePointerCapture(ev.pointerId);
+        handle.removeEventListener("pointermove", onMove);
+        handle.removeEventListener("pointerup", onUp);
+      }
+      handle.addEventListener("pointermove", onMove);
+      handle.addEventListener("pointerup", onUp);
+    });
+  }
+
+  function serializeLayout() {
+    var result = [];
+
+    Array.prototype.forEach.call(canvas.querySelectorAll(".pdf-block"), function (div) {
+      result.push({
+        id: div.dataset.id,
+        kind: "fixed",
+        page: "all",
+        x: div.offsetLeft,
+        y: div.offsetTop,
+        w: div.offsetWidth,
+        h: div.offsetHeight,
+        visible: div.dataset.visible === "true"
+      });
+    });
+
+    [[flowList1, 1], [flowList2, 2]].forEach(function (pair) {
+      var list = pair[0], pageNum = pair[1];
+      Array.prototype.forEach.call(list.children, function (li, index) {
+        result.push({
+          id: li.dataset.id,
+          kind: "flow",
+          page: pageNum,
+          order: index + 1,
+          x: Number(li.dataset.x),
+          w: Number(li.dataset.w),
+          visible: li.dataset.visible === "true"
+        });
+      });
+    });
+
+    return result;
+  }
+
+  form.addEventListener("submit", function () {
+    hiddenField.value = JSON.stringify(serializeLayout());
+  });
+
+  document.getElementById("reset-layout-button").addEventListener("click", function () {
+    buildFromLayout(defaultLayout);
+  });
+
+  buildFromLayout(initialLayout);
+})();
+<% end %>

@@ -1,0 +1,61 @@
+<h3><%= t("vendor_management.purchase_orders.approval_title") %></h3>
+
+<p>
+  <strong><%= t("vendor_management.purchase_orders.approval_status") %>:</strong>
+  <%= @purchase_order.status.humanize %>
+</p>
+
+<% if can_edit? && @purchase_order.status == "draft" %>
+  <p>
+    <%= form_with url: projects_submit_vendor_management_purchase_order_for_approval_path(@project, @purchase_order), method: :post, local: true do %>
+      <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary)) { t("vendor_management.purchase_orders.submit_for_approval") } %>
+    <% end %>
+  </p>
+<% end %>
+
+<% if @purchase_order.po_approval_steps.any? %>
+  <div class="generic-table--container">
+    <div class="generic-table--results-container">
+      <table class="generic-table">
+        <colgroup>
+          <col><col><col><col><col>
+        </colgroup>
+        <thead>
+          <tr>
+            <% ["sequence", "approver_title"].each do |column| %>
+              <th>
+                <%= t("vendor_management.approval_chain_columns.#{column}") %>
+              </th>
+            <% end %>
+            <th><%= t("vendor_management.purchase_orders.approval_status") %></th>
+            <th><%= t("vendor_management.purchase_orders.approved_by") %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @purchase_order.po_approval_steps.order(:sequence).each do |step| %>
+            <tr>
+              <td><%= step.sequence %></td>
+              <td><%= step.approver_title %></td>
+              <td><%= step.status.humanize %></td>
+              <td><%= step.approver_name %></td>
+              <td>
+                <% if can_manage_approvals? && step == @purchase_order.next_pending_step %>
+                  <%= form_with url: projects_approve_vendor_management_po_approval_step_path(@project, step), method: :patch, local: true do %>
+                    <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary, size: :small)) { t("vendor_management.purchase_orders.approve") } %>
+                  <% end %>
+                  <%= form_with url: projects_reject_vendor_management_po_approval_step_path(@project, step), method: :patch, local: true do %>
+                    <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary, size: :small, data: { confirm: t("text_are_you_sure") })) { t("vendor_management.purchase_orders.reject") } %>
+                  <% end %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% elsif @purchase_order.status == "draft" %>
+  <p><%= t("vendor_management.purchase_orders.no_approval_steps") %></p>
+<% end %>
+

@@ -1,0 +1,23 @@
+<%= form_with model: @contract_line, url: url, scope: "contract_line", local: true, data: { turbo: false } do |f| %>
+  <% if @contract_line.errors.any? %>
+    <div class="flash error"><%= @contract_line.errors.full_messages.join(", ") %></div>
+  <% end %>
+
+  <div class="form--field">
+    <label class="form--label" for="contract_line_name"><%= t("payment_terms.line_form.name_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :name %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="contract_line_component_value"><%= t("payment_terms.line_form.value_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :component_value %>
+    </div>
+  </div>
+
+  <div class="form--actions">
+    <%= f.submit t("payment_terms.line_form.submit"), class: "button -highlight" %>
+  </div>
+<% end %>

@@ -1,0 +1,76 @@
+<% html_title t("vendor_management.purchase_orders_overview.new_po") %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { t("vendor_management.purchase_orders_overview.new_po") }
+    header.with_breadcrumbs([
+      { href: vendor_management_purchase_orders_overview_path, text: t("vendor_management.purchase_orders_overview.title") },
+      t("vendor_management.purchase_orders_overview.new_po")
+    ])
+  end
+%>
+
+<%= form_with model: @purchase_order, url: vendor_management_purchase_orders_overview_path, scope: "purchase_order", local: true, data: { turbo: false } do |f| %>
+  <% if @purchase_order.errors.any? %>
+    <div class="flash error"><%= @purchase_order.errors.full_messages.join(", ") %></div>
+  <% end %>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_project_id"><%= t("vendor_management.purchase_orders_overview.project_label") %></label>
+    <div class="form--field-container">
+      <%= f.select :project_id, @projects.map { |p| [p.name, p.id] }, include_blank: true %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_vendor_id"><%= t("vendor_management.po_form.vendor_label") %></label>
+    <div class="form--field-container">
+      <%= f.select :vendor_id, @vendors.map { |v| [v.name, v.id] }, include_blank: true %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_po_number"><%= t("vendor_management.po_form.po_number_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :po_number %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_o_and_d"><%= t("vendor_management.po_form.o_and_d_label") %></label>
+    <div class="form--field-container">
+      <%= f.text_field :o_and_d %>
+      <p class="form--field-instructions"><%= t("vendor_management.po_form.o_and_d_hint") %></p>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_issue_date"><%= t("vendor_management.po_form.issue_date_label") %></label>
+    <div class="form--field-container">
+      <%= f.date_field :issue_date %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_currency"><%= t("vendor_management.po_form.currency_label") %></label>
+    <div class="form--field-container">
+      <%= f.select :currency, VendorManagement::PurchaseOrder::CURRENCIES %>
+    </div>
+  </div>
+
+  <div class="form--field">
+    <label class="form--label" for="purchase_order_total_value"><%= t("vendor_management.po_form.total_value_label") %></label>
+    <div class="form--field-container">
+      <%= f.number_field :total_value, step: "0.01", min: 0 %>
+      <p class="form--field-instructions"><%= t("vendor_management.po_form.total_value_manual_hint") %></p>
+    </div>
+  </div>
+
+  <p><em><%= t("vendor_management.purchase_orders_overview.new_po_hint") %></em></p>
+
+  <div class="form--actions">
+    <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary)) { t("vendor_management.po_form.submit") } %>
+  </div>
+<% end %>
+
+

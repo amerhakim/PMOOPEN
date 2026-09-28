@@ -1,0 +1,30 @@
+<% html_title t("vendor_management.import.title") %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { t("vendor_management.import.title") }
+    header.with_breadcrumbs(
+      [
+        { href: vendor_management_vendors_path, text: t("vendor_management.index.title") },
+        t("vendor_management.import.title")
+      ]
+    )
+  end
+%>
+
+<p class="op-form-hint">
+  <%= t("vendor_management.import.hint") %>
+  <%= link_to t("vendor_management.import.download_template"), export_vendor_management_vendors_path %>
+</p>
+
+<%= form_with url: import_vendor_management_vendors_path, method: :post, multipart: true, local: true, data: { turbo: false } do |f| %>
+  <div class="form--field">
+    <label class="form--label" for="file"><%= t("vendor_management.import.file_label") %></label>
+    <div class="form--field-container">
+      <%= f.file_field :file, accept: ".xlsx" %>
+    </div>
+  </div>
+  <div class="form--actions">
+    <%= f.submit t("vendor_management.import.submit"), class: "button -highlight" %>
+  </div>
+<% end %>

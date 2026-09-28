@@ -1,0 +1,17 @@
+<%#
+  Deliberately skipping widget_wrapper here (which would add its own
+  Primer title-bar box) -- the Angular side (pmo-dashboard-widget.component)
+  already renders a simple header, and the card partial below has its own
+  colored project-name header. Two header layers would be one too many.
+
+  The turbo-frame wrapper is still required though: Turbo only swaps in a
+  fetched response if it contains a <turbo-frame> whose id matches the
+  requesting frame (grids-widgets-pmo-dashboard, set on the Angular side)
+  -- widget_wrapper would normally provide that for free.
+
+  No _styles partial anymore -- the redesigned card (see _card.html.erb)
+  uses inline styles throughout, not the old .pmo-* CSS classes.
+%>
+<%= helpers.turbo_frame_tag "grids-widgets-pmo-dashboard" do %>
+  <%= render partial: "pmo_dashboard/card", locals: { summary: summary } %>
+<% end %>

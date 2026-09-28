@@ -1,0 +1,6 @@
+<% html_title t("vendor_management.line_item_form.title_edit") %>
+
+<div class="generic-table--container">
+  <h2><%= t("vendor_management.line_item_form.title_edit") %> &mdash; <%= @line_item.purchase_order.po_number %></h2>
+  <%= render "line_item_form", url: projects_vendor_management_po_line_item_path(@project, @line_item) %>
+</div>

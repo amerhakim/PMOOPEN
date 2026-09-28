@@ -1,0 +1,40 @@
+<%= form_with url: vendor_management_vendors_path, method: :get, local: true do %>
+  <div class="vendor-management-filters" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:8px;">
+    <div>
+      <label class="form--label" for="q_name"><%= t("vendor_management.filters.name") %></label><br>
+      <%= text_field_tag "q[name]", filters[:name], id: "q_name", class: "form--text-field", style: "width:130px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_category"><%= t("vendor_management.filters.category") %></label><br>
+      <%= select_tag "q[category]",
+                      options_for_select([[t("vendor_management.filters.all"), ""]] + VendorManagement::Vendor::CATEGORIES.map { |c| [c, c] }, filters[:category]),
+                      id: "q_category", class: "form--select", style: "width:110px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_country"><%= t("vendor_management.filters.country") %></label><br>
+      <%= text_field_tag "q[country]", filters[:country], id: "q_country", class: "form--text-field", style: "width:110px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_contact_name"><%= t("vendor_management.filters.contact_name") %></label><br>
+      <%= text_field_tag "q[contact_name]", filters[:contact_name], id: "q_contact_name", class: "form--text-field", style: "width:130px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_contact_email"><%= t("vendor_management.filters.contact_email") %></label><br>
+      <%= text_field_tag "q[contact_email]", filters[:contact_email], id: "q_contact_email", class: "form--text-field", style: "width:140px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_contact_phone"><%= t("vendor_management.filters.contact_phone") %></label><br>
+      <%= text_field_tag "q[contact_phone]", filters[:contact_phone], id: "q_contact_phone", class: "form--text-field", style: "width:120px;" %>
+    </div>
+    <div>
+      <label class="form--label" for="q_status"><%= t("vendor_management.filters.status") %></label><br>
+      <%= select_tag "q[status]",
+                      options_for_select([[t("vendor_management.filters.all"), ""]] + VendorManagement::Vendor::STATUSES.map { |s| [s.humanize, s] }, filters[:status]),
+                      id: "q_status", class: "form--select", style: "width:100px;" %>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary)) { t("vendor_management.filters.apply") } %>
+      <%= render(Primer::Beta::Button.new(scheme: :primary, tag: :a, href: vendor_management_vendors_path)) { t("vendor_management.filters.clear") } %>
+    </div>
+  </div>
+<% end %>

@@ -1,0 +1,26 @@
+// Custom-dev: Expected Completion / % Complete are short percentage
+// values (e.g. "100%") that don't need this table's default wide column.
+// Widths in px, not ch -- measured directly against this header font
+// (600 weight, uppercase, 14px): "COMPLETION" ~88px, "COMPLETE" ~69px,
+// each column sized to its own longest word plus room for the sort/menu
+// icon and cell padding, so the header wraps onto exactly two lines at
+// the word boundary instead of breaking a word mid-way.
+th[aria-label="Expected completion"],
+td.wp-table--cell-td.expectedCompletion
+  max-width: 150px
+  width: 150px
+
+th[aria-label="% Complete"],
+td.wp-table--cell-td.percentageDone
+  max-width: 120px
+  width: 120px
+
+th[aria-label="Expected completion"],
+th[aria-label="% Complete"]
+  .generic-table--sort-header-outer,
+  .generic-table--sort-header,
+  a
+    white-space: normal !important
+    word-break: normal
+    overflow-wrap: break-word
+    line-height: 1.2

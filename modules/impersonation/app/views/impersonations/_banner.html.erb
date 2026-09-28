@@ -1,0 +1,9 @@
+<% if session[:impersonator_user_id].present? %>
+  <div style="background:#b45309;color:#fff;padding:6px 16px;text-align:center;font-size:13px;">
+    <%= t("impersonation.banner", name: User.current.name) %>
+    &mdash;
+    <%= link_to t("impersonation.return_link"), impersonation_path,
+                data: { turbo_method: :delete },
+                style: "color:#fff;text-decoration:underline;" %>
+  </div>
+<% end %>

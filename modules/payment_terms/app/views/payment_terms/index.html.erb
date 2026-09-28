@@ -1,0 +1,32 @@
+<% html_title t("payment_terms.index.title") %>
+
+<h2><%= t("payment_terms.index.title") %></h2>
+
+<% @contract_lines.each do |line| %>
+  <h3>
+    <%= line.name %>
+    <% if line.component_value.present? %>
+      &mdash; <%= number_to_currency(line.component_value, unit: "QAR ", format: "%u%n") %>
+    <% end %>
+  </h3>
+
+  <% if @can_edit %>
+    <p>
+      <%= render(Primer::Beta::Button.new(scheme: :primary, size: :small, tag: :a, href: projects_edit_payment_terms_line_path(@project, line))) { t("payment_terms.index.edit") } %>
+      <%= render(Primer::Beta::Button.new(scheme: :primary, size: :small, tag: :a, href: projects_payment_terms_line_path(@project, line), data: { confirm: t("text_are_you_sure"), turbo_method: :delete })) { t("payment_terms.index.delete") } %>
+      <%= render(Primer::Beta::Button.new(scheme: :primary, size: :small, tag: :a, href: projects_new_payment_terms_payment_path(@project, line))) { t("payment_terms.index.new_payment") } %>
+    </p>
+  <% end %>
+
+  <%= render partial: "payment_terms/payment_filters", locals: { contract_line: line, filters: payment_filter_params(line) } %>
+
+  <%= render(PaymentTerms::Payments::TableComponent.new(rows: filtered_payments_for(line), can_edit: @can_edit, contract_line: line)) %>
+<% end %>
+
+<% if @contract_lines.empty? %>
+  <p><%= t("payment_terms.index.no_lines") %></p>
+<% end %>
+
+<% if @can_edit %>
+  <p><%= render(Primer::Beta::Button.new(scheme: :primary, tag: :a, href: projects_new_payment_terms_line_path(@project))) { t("payment_terms.index.new_line") } %></p>
+<% end %>

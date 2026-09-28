@@ -1,0 +1,28 @@
+<%=
+component_wrapper do
+  flex_layout do |flex|
+    flex.with_row do
+      render(Primer::OpenProject::SubHeader.new) do |subheader|
+        if can_create
+          subheader.with_action_button(
+            scheme: :primary,
+            leading_icon: :plus,
+            label: t("vendor_management.purchase_orders_overview.new_po"),
+            tag: :a,
+            href: helpers.new_vendor_management_purchase_order_overview_path,
+            test_selector: "add-po-overview-button"
+          ) { t("vendor_management.purchase_orders_overview.new_po") }
+        end
+      end
+    end
+
+    flex.with_row(mt: 3) do
+      helpers.render(partial: "purchase_orders_overview/purchase_order_overview_filters", locals: { filters: filters })
+    end
+
+    flex.with_row do
+      render(VendorManagement::PurchaseOrdersOverview::TableComponent.new(rows: purchase_orders))
+    end
+  end
+end
+%>

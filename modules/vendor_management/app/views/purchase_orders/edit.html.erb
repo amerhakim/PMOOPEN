@@ -1,0 +1,33 @@
+<% html_title t("vendor_management.po_form.title_edit") %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { @purchase_order.po_number }
+    header.with_breadcrumbs(
+      [
+        { href: projects_vendor_management_purchase_orders_path(@project), text: t("vendor_management.purchase_orders.title") },
+        @purchase_order.po_number
+      ]
+    )
+  end
+%>
+
+<div class="generic-table--container">
+  <p>
+    <%= render(Primer::Beta::Button.new(scheme: :primary, tag: :a, href: projects_export_vendor_management_purchase_order_path(@project, @purchase_order), target: "_blank")) { t("vendor_management.purchase_orders.export_pdf") } %>
+  </p>
+
+  <%= render "purchase_orders/po_approval" %>
+
+  <hr>
+
+  <%= render "purchase_orders/po_payments" %>
+
+  <hr>
+
+  <%= render "purchase_orders/po_line_items" %>
+
+  <hr>
+
+  <%= render "form", url: projects_vendor_management_purchase_order_path(@project, @purchase_order) %>
+</div>

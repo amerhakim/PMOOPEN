@@ -1,0 +1,10 @@
+<% html_title t("vendor_management.purchase_orders.title") %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { t("vendor_management.purchase_orders.title") }
+    header.with_breadcrumbs([t("vendor_management.purchase_orders.title")])
+  end
+%>
+
+<%= render(VendorManagement::PurchaseOrders::IndexComponent.new(purchase_orders: @purchase_orders, can_edit: can_edit?, filters: @filters, project: @project)) %>
