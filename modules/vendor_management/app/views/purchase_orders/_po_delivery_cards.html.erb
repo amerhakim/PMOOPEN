@@ -1,0 +1,35 @@
+<% po = @purchase_order %>
+<% items = po.po_line_items.to_a %>
+<% delivered_qds = items.count(&:delivered_to_qds?) %>
+<% delivered_customer = items.count(&:delivered_to_customer?) %>
+
+<%# the mark-all forms are plain forms; the buttons below point at them with the form attribute %>
+<%= form_with url: projects_mark_all_delivered_vendor_management_purchase_order_path(@project, po), method: :post, local: true, html: { id: "mark_all_qds_form" }, data: { turbo: false } do %>
+  <input type="hidden" name="target" value="qds">
+<% end %>
+<%= form_with url: projects_mark_all_delivered_vendor_management_purchase_order_path(@project, po), method: :post, local: true, html: { id: "mark_all_customer_form" }, data: { turbo: false } do %>
+  <input type="hidden" name="target" value="customer">
+<% end %>
+
+<div class="po-two even" style="margin-top: 16px;">
+  <div class="po-panel">
+    <h3><%= t("vendor_management.po_page.delivery_to_qds") %></h3>
+    <div class="po-pad">
+      <div class="po-big"><%= delivered_qds %> <small><%= t("vendor_management.po_page.of_items_delivered", count: items.size) %></small></div>
+      <div class="po-bar" aria-hidden="true"><i style="width:<%= items.any? ? (delivered_qds * 100.0 / items.size).round(1) : 0 %>%"></i></div>
+      <% if can_edit? && items.any? %>
+        <p style="margin: 12px 0 0;"><%= render(Primer::Beta::Button.new(type: :submit, size: :small, form: "mark_all_qds_form", data: { confirm: t("vendor_management.purchase_orders.mark_all_delivered_confirm") })) { t("vendor_management.po_page.mark_all_qds") } %></p>
+      <% end %>
+    </div>
+  </div>
+  <div class="po-panel">
+    <h3><%= t("vendor_management.po_page.delivery_to_customer") %></h3>
+    <div class="po-pad">
+      <div class="po-big"><%= delivered_customer %> <small><%= t("vendor_management.po_page.of_items_delivered", count: items.size) %></small></div>
+      <div class="po-bar blue" aria-hidden="true"><i style="width:<%= items.any? ? (delivered_customer * 100.0 / items.size).round(1) : 0 %>%"></i></div>
+      <% if can_edit? && items.any? %>
+        <p style="margin: 12px 0 0;"><%= render(Primer::Beta::Button.new(type: :submit, size: :small, form: "mark_all_customer_form", data: { confirm: t("vendor_management.purchase_orders.mark_all_delivered_confirm") })) { t("vendor_management.po_page.mark_all_customer") } %></p>
+      <% end %>
+    </div>
+  </div>
+</div>

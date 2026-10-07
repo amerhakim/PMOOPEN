@@ -1,0 +1,17 @@
+<% html_title t("vendor_management.vendor_form.title_new") %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { t("vendor_management.vendor_form.title_new") }
+    header.with_breadcrumbs(
+      [
+        { href: vendor_management_vendors_path, text: t("vendor_management.index.title") },
+        t("vendor_management.vendor_form.title_new")
+      ]
+    )
+  end
+%>
+
+<%= primer_form_with(model: @vendor, scope: :vendor, url: vendor_management_vendors_path) do |f| %>
+  <%= render(VendorManagement::Vendors::VendorForm.new(f)) %>
+<% end %>

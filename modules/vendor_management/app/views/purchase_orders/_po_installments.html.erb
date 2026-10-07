@@ -1,0 +1,28 @@
+<% installments = @purchase_order.po_installments.to_a %>
+<% if installments.any? %>
+  <h3><%= t("vendor_management.purchase_orders.schedule_title") %></h3>
+  <div class="generic-table--container">
+    <div class="generic-table--results-container">
+      <table class="generic-table">
+        <thead>
+          <tr>
+            <% %w[description percent amount due_on].each do |column| %>
+              <th style="padding: 6px 8px;"><%= t("vendor_management.po_ai.col_#{column}") %></th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% installments.each do |row| %>
+            <tr>
+              <td><%= row.description %></td>
+              <td><%= row.percent ? "#{row.percent.to_f.round(2)}%" : "" %></td>
+              <td><%= number_to_currency(row.amount, unit: "#{@purchase_order.currency} ", format: "%u%n") %></td>
+              <td><%= row.due_on&.strftime("%d-%b-%Y") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <hr>
+<% end %>

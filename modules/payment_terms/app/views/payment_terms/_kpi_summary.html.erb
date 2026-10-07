@@ -1,0 +1,19 @@
+<div class="payment-terms-kpi-grid">
+  <div class="payment-terms-kpi-card">
+    <div class="payment-terms-kpi-label payment-terms-eyebrow"><%= t("payment_terms.index.kpi_contract_value") %></div>
+    <div class="payment-terms-kpi-value"><%= payment_terms_money(kpi[:contract_value], currency) %></div>
+  </div>
+  <div class="payment-terms-kpi-card">
+    <div class="payment-terms-kpi-label payment-terms-eyebrow"><%= t("payment_terms.index.kpi_collected") %></div>
+    <div class="payment-terms-kpi-value payment-terms-kpi-collected"><%= payment_terms_money(kpi[:collected], currency) %></div>
+  </div>
+  <div class="payment-terms-kpi-card">
+    <div class="payment-terms-kpi-label payment-terms-eyebrow"><%= t("payment_terms.index.kpi_invoiced_awaiting") %></div>
+    <div class="payment-terms-kpi-value payment-terms-kpi-invoiced"><%= payment_terms_money(kpi[:invoiced_awaiting], currency) %></div>
+  </div>
+  <div class="payment-terms-kpi-card">
+    <div class="payment-terms-kpi-label payment-terms-eyebrow"><%= t("payment_terms.index.kpi_not_yet_invoiced") %></div>
+    <div class="payment-terms-kpi-value payment-terms-kpi-pending"><%= payment_terms_money(kpi[:not_yet_invoiced], currency) %></div>
+  </div>
+</div>
+

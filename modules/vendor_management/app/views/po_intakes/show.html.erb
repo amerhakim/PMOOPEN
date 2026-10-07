@@ -1,0 +1,42 @@
+<% html_title t("vendor_management.po_ai.title") %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { t("vendor_management.po_ai.title") }
+    header.with_breadcrumbs(
+      [
+        { href: projects_vendor_management_purchase_orders_path(@project), text: t("vendor_management.purchase_orders.title") },
+        t("vendor_management.po_ai.title")
+      ]
+    )
+  end
+%>
+
+<p class="op-form-hint"><strong><%= @import.source_filename %></strong></p>
+
+<% unreadable = @import.status == "ready" && @import.result_data["pos"].blank? %>
+<% if @import.working? %>
+  <div class="flash notice" style="max-width: 760px;">
+    <%= t("vendor_management.po_ai.working") %>
+    <strong><%= @import.stage %></strong>
+  </div>
+  <div class="form--actions">
+    <%= link_to t("vendor_management.po_ai.cancel"), projects_vendor_management_po_intake_destroy_path(@project, @import), data: { turbo_method: :delete }, class: "button" %>
+  </div>
+  <%= javascript_tag nonce: true do %>
+    setTimeout(function () { window.location.reload(); }, 4000);
+  <% end %>
+<% elsif @import.status == "failed" || unreadable %>
+  <div class="flash error" style="max-width: 760px;">
+    <%= t("vendor_management.po_ai.failed") %> <%= @import.error_message.presence || t("vendor_management.po_ai.nothing_found") %>
+  </div>
+  <div class="form--actions">
+    <%= link_to t("vendor_management.po_ai.try_again"), projects_new_vendor_management_po_intake_path(@project), class: "button -highlight" %>
+    <%= link_to t("vendor_management.po_ai.cancel"), projects_vendor_management_po_intake_destroy_path(@project, @import), data: { turbo_method: :delete }, class: "button" %>
+  </div>
+<% elsif @import.status == "confirmed" %>
+  <div class="flash notice"><%= t("vendor_management.po_ai.already_created") %></div>
+  <p><%= link_to t("vendor_management.purchase_orders.title"), projects_vendor_management_purchase_orders_path(@project) %></p>
+<% else %>
+  <%= render "po_intakes/review" %>
+<% end %>

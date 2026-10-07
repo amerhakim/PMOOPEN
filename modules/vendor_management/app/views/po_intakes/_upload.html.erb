@@ -1,0 +1,114 @@
+<%# Upload card + "how it works" side panel. Used by the project page and the company-wide page.
+    locals: url, cancel_url, projects (nil when the project is already known) %>
+<% projects = local_assigns[:projects] %>
+<%= render "purchase_orders/po_page_styles" %>
+<style>
+  .po-ai { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 20px; align-items: start; margin-top: 4px; }
+  @media (max-width: 920px) { .po-ai { grid-template-columns: minmax(0, 1fr); } }
+  .po-ai .po-panel > h3 { text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--po-ink); }
+  .po-ai-body { padding: 20px; display: grid; gap: 18px; }
+  .po-ai-drop { position: relative; border: 2px dashed #b9c4d0; border-radius: 12px; background: #f8fafc; padding: 34px 20px; text-align: center; transition: border-color .15s ease, background-color .15s ease; }
+  .po-ai-drop:hover, .po-ai-drop.over { border-color: var(--po-accent); background: #eef5fb; }
+  .po-ai-drop:focus-within { outline: 3px solid rgba(31, 95, 153, .35); outline-offset: 2px; }
+  .po-ai-drop.has-file { border-style: solid; border-color: var(--po-good); background: #f1faf4; }
+  .po-ai-drop input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .po-ai-drop svg { width: 38px; height: 38px; color: var(--po-accent); }
+  .po-ai-drop.has-file svg { color: var(--po-good); }
+  .po-ai-drop .t { display: block; font-size: 16px; font-weight: 700; margin-top: 8px; }
+  .po-ai-drop .s { display: block; color: var(--po-muted); margin-top: 4px; }
+  .po-ai-types { display: flex; gap: 6px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+  .po-ai-types span { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: #fff; border: 1px solid var(--po-line); color: var(--po-muted); }
+  .po-ai-file-name { word-break: break-all; }
+  .po-ai-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .po-ai-actions input[disabled] { opacity: .5; cursor: not-allowed; }
+  .po-ai-steps { list-style: none; margin: 0; padding: 18px 20px 6px; display: grid; gap: 0; counter-reset: s; }
+  .po-ai-steps li { position: relative; padding: 0 0 18px 44px; counter-increment: s; }
+  .po-ai-steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--po-accent); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 13px; }
+  .po-ai-steps li:not(:last-child)::after { content: ""; position: absolute; left: 13px; top: 32px; bottom: 4px; width: 2px; background: var(--po-soft); }
+  .po-ai-steps b { display: block; font-size: 14px; }
+  .po-ai-steps span { color: var(--po-muted); display: block; margin-top: 2px; }
+  .po-ai-private { display: flex; gap: 12px; padding: 14px 20px; border-top: 1px solid var(--po-line); background: var(--po-band); align-items: flex-start; }
+  .po-ai-private svg { flex: none; width: 22px; height: 22px; color: var(--po-good); margin-top: 1px; }
+  .po-ai-private b { display: block; }
+  .po-ai-private span { color: var(--po-muted); }
+  @media (prefers-reduced-motion: reduce) { .po-ai-drop { transition: none; } }
+</style>
+
+<div class="po-page po-ai">
+  <%= form_with url: url, method: :post, multipart: true, local: true, data: { turbo: false }, html: { id: "po-ai-form" } do |f| %>
+    <div class="po-panel">
+      <h3><%= t("vendor_management.po_ai.upload_title") %></h3>
+      <div class="po-ai-body">
+        <% if projects %>
+          <div class="po-f">
+            <label for="project_id"><%= t("vendor_management.purchase_orders_overview.project_label") %> *</label>
+            <%= select_tag :project_id, options_for_select(projects.map { |p| [p.name, p.id] }), include_blank: t("vendor_management.po_ai.choose_project"), required: true %>
+            <p class="po-hint"><%= t("vendor_management.purchase_orders_overview.ai_project_hint") %></p>
+          </div>
+        <% end %>
+
+        <div>
+          <div class="po-ai-drop" data-po-ai-drop>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+            <span class="t" data-po-ai-title><%= t("vendor_management.po_ai.drop_title") %></span>
+            <span class="s" data-po-ai-sub><%= t("vendor_management.po_ai.drop_sub") %></span>
+            <div class="po-ai-types" aria-hidden="true"><span>PDF</span><span>XLSX</span><span>CSV</span><span><%= t("vendor_management.po_ai.size_limit") %></span></div>
+            <input id="file" type="file" name="file" accept=".pdf,.xlsx,.xlsm,.csv" required aria-label="<%= t("vendor_management.po_ai.file_label") %>">
+          </div>
+          <p class="po-hint" style="margin: 8px 0 0; font-size: 12.5px; color: var(--po-muted);"><%= t("vendor_management.po_ai.file_hint") %></p>
+        </div>
+
+        <div class="po-ai-actions">
+          <%= f.submit t("vendor_management.po_ai.read_file"), class: "button -highlight", id: "po-ai-submit", disabled: true %>
+          <%= link_to t(:button_cancel), cancel_url, class: "button" %>
+          <span style="color: var(--po-muted); font-size: 13px;"><%= t("vendor_management.po_ai.typical_time") %></span>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <aside class="po-panel" aria-label="<%= t("vendor_management.po_ai.how_title") %>">
+    <h3><%= t("vendor_management.po_ai.how_title") %></h3>
+    <ol class="po-ai-steps">
+      <li><b><%= t("vendor_management.po_ai.step1_title") %></b><span><%= t("vendor_management.po_ai.step1_body") %></span></li>
+      <li><b><%= t("vendor_management.po_ai.step2_title") %></b><span><%= t("vendor_management.po_ai.step2_body") %></span></li>
+      <li><b><%= t("vendor_management.po_ai.step3_title") %></b><span><%= t("vendor_management.po_ai.step3_body") %></span></li>
+    </ol>
+    <div class="po-ai-private">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+      <div><b><%= t("vendor_management.po_ai.private_title") %></b><span><%= t("vendor_management.po_ai.private_body") %></span></div>
+    </div>
+  </aside>
+</div>
+
+<%= javascript_tag nonce: true do %>
+  (function () {
+    var form = document.getElementById("po-ai-form");
+    if (!form) return;
+    var drop = form.querySelector("[data-po-ai-drop]");
+    var input = form.querySelector("input[type=file]");
+    var title = form.querySelector("[data-po-ai-title]");
+    var sub = form.querySelector("[data-po-ai-sub]");
+    var submit = document.getElementById("po-ai-submit");
+    var project = document.getElementById("project_id");
+    var idleTitle = title.textContent, idleSub = sub.textContent;
+    var changeText = <%= raw t("vendor_management.po_ai.change_file").to_json %>;
+    var sendingText = <%= raw t("vendor_management.po_ai.sending").to_json %>;
+
+    function size(bytes) { return bytes > 1048576 ? (bytes / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(bytes / 1024)) + " KB"; }
+    function refresh() {
+      var file = input.files && input.files[0];
+      drop.classList.toggle("has-file", !!file);
+      title.textContent = file ? file.name : idleTitle;
+      title.classList.toggle("po-ai-file-name", !!file);
+      sub.textContent = file ? size(file.size) + " · " + changeText : idleSub;
+      submit.disabled = !file || !!(project && !project.value);
+    }
+    input.addEventListener("change", refresh);
+    if (project) project.addEventListener("change", refresh);
+    ["dragenter", "dragover"].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("over"); }); });
+    ["dragleave", "drop"].forEach(function (ev) { drop.addEventListener(ev, function () { drop.classList.remove("over"); }); });
+    form.addEventListener("submit", function () { submit.value = sendingText; setTimeout(function () { submit.disabled = true; }, 0); });
+    refresh();
+  })();
+<% end %>

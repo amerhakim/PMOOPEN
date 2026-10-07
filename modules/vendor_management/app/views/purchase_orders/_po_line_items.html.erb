@@ -1,0 +1,103 @@
+<% po = @purchase_order %>
+<% money = ->(amount) { number_to_currency(amount, unit: "", format: "%n") } %>
+<%# sections in the PO's own order: the first line of each section decides where it sits %>
+<% sections = po.po_line_items.reorder(:id).to_a.group_by { |l| l.section_label.to_s.strip } %>
+<% type_label = { "hardware" => "Hardware", "software_license" => "License", "software_subscription" => "Subscription", "service" => "Service", "other" => "Other" } %>
+
+<h2 class="po-h" style="margin: 36px 0 10px;"><%= t("vendor_management.purchase_orders.line_items_title") %>
+  <span class="po-h-meta"><%= t("vendor_management.po_page.items_in_sections", items: po.po_line_items.size, sections: sections.size) %></span>
+</h2>
+<div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px 16px; margin: 0 0 12px;">
+  <div class="po-actions" style="justify-content:flex-start;">
+    <%= render(Primer::Beta::Button.new(type: :button, size: :small, style: "min-width:125px;justify-content:center;", data: { "po-all": "expand" })) { t("vendor_management.po_page.expand_all") } %>
+    <%= render(Primer::Beta::Button.new(type: :button, size: :small, style: "min-width:125px;justify-content:center;", data: { "po-all": "collapse" })) { t("vendor_management.po_page.collapse_all") } %>
+  </div>
+  <div class="po-actions">
+    <% if can_edit? %>
+      <%= render(Primer::Beta::Button.new(scheme: :primary, size: :small, tag: :a, href: projects_new_vendor_management_po_line_item_path(@project, po))) { t("vendor_management.purchase_orders.new_line_item") } %>
+      <%= render(Primer::Beta::Button.new(size: :small, tag: :a, href: projects_import_new_vendor_management_po_line_items_path(@project, po))) { t("vendor_management.line_item_import.link") } %>
+      <% if po.po_line_items.any? %>
+        <%= render(Primer::Beta::Button.new(type: :submit, size: :small, form: "line_items_delivery_form")) { t("vendor_management.purchase_orders.save_delivery_status") } %>
+      <% end %>
+    <% end %>
+  </div>
+</div>
+
+<%# one empty form that the delivery checkboxes below belong to (they sit in several tables) %>
+<%= form_with url: projects_update_vendor_management_purchase_order_delivery_status_path(@project, po), method: :patch, local: true, html: { id: "line_items_delivery_form" }, data: { turbo: false } do %><% end %>
+
+<% if sections.empty? %>
+  <div class="po-panel"><div class="po-empty"><%= t("vendor_management.purchase_orders.no_line_items") %></div></div>
+<% end %>
+
+<% sections.each_with_index do |(label, lines), index| %>
+  <% name = label.presence || t("vendor_management.po_page.main_items") %>
+  <% delivered = lines.count(&:delivered_to_qds?) %>
+  <div class="po-sec">
+    <div class="po-sec-h">
+      <button type="button" class="po-sec-toggle" data-po-toggle="po-sec-<%= index %>" aria-expanded="true">
+        <span class="po-chev" aria-hidden="true">&#9656;</span>
+        <span class="po-sec-name"><%= name %></span>
+        <span class="po-sec-count"><%= t("vendor_management.po_page.items_count", count: lines.size) %> · <%= t("vendor_management.po_page.delivered_count", count: delivered) %></span>
+        <span class="po-mini" aria-hidden="true"><i style="width:<%= lines.any? ? (delivered * 100.0 / lines.size).round : 0 %>%"></i></span>
+        <span class="po-sec-total"><%= po.currency %> <%= money.call(lines.sum(&:line_total)) %></span>
+      </button>
+    </div>
+    <div class="po-sec-b" id="po-sec-<%= index %>">
+      <div class="po-scroll">
+        <table class="po-table items">
+          <thead>
+            <tr>
+              <th class="c"><%= t("vendor_management.po_page.col_qds") %></th>
+              <th class="c"><%= t("vendor_management.po_page.col_customer") %></th>
+              <th><%= t("vendor_management.po_columns.part_no") %></th>
+              <th><%= t("vendor_management.po_columns.description") %></th>
+              <th><%= t("vendor_management.po_columns.item_type") %></th>
+              <th class="r"><%= t("vendor_management.po_columns.quantity") %></th>
+              <th class="r"><%= t("vendor_management.po_columns.unit_price") %></th>
+              <th class="r"><%= t("vendor_management.po_columns.line_total") %></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% lines.each do |line| %>
+              <tr>
+                <td class="c">
+                  <% if can_edit? %>
+                    <%= check_box_tag "delivered_to_qds_ids[]", line.id, line.delivered_to_qds?, id: "delivered_qds_#{line.id}", form: "line_items_delivery_form" %>
+                  <% else %><%= line.delivered_to_qds? ? t(:general_text_yes) : t(:general_text_no) %><% end %>
+                </td>
+                <td class="c">
+                  <% if can_edit? %>
+                    <%= check_box_tag "delivered_to_customer_ids[]", line.id, line.delivered_to_customer?, id: "delivered_customer_#{line.id}", form: "line_items_delivery_form" %>
+                  <% else %><%= line.delivered_to_customer? ? t(:general_text_yes) : t(:general_text_no) %><% end %>
+                </td>
+                <td class="po-part"><%= line.part_no %></td>
+                <td style="min-width:240px;"><%= line.description %></td>
+                <td class="po-type"><%= type_label[line.item_type] || line.item_type.humanize %></td>
+                <td class="r"><%= line.quantity.to_f == line.quantity.to_i ? line.quantity.to_i : line.quantity.to_f %></td>
+                <td class="r"><%= money.call(line.unit_price) %></td>
+                <td class="r"><%= money.call(line.line_total) %></td>
+                <td>
+                  <% if can_edit? %>
+                    <div class="po-cell">
+                      <div class="po-rowact">
+                        <%= link_to render("purchase_orders/icon", name: :edit), projects_edit_vendor_management_po_line_item_path(@project, line), title: t(:button_edit), "aria-label": t(:button_edit) %>
+                        <button type="button" class="po-ib danger" data-po-confirm-open title="<%= t(:button_delete) %>" aria-label="<%= t(:button_delete) %>"><%= render("purchase_orders/icon", name: :delete) %></button>
+                      </div>
+                      <div class="po-confirm" role="alert">
+                        <%= t("vendor_management.po_page.delete_item_q") %>
+                        <%= button_to t(:button_delete), projects_vendor_management_po_line_item_destroy_path(@project, line), method: :delete, class: "go", form: { data: { turbo: false } } %>
+                        <button type="button" data-po-confirm-cancel><%= t("vendor_management.po_page.keep") %></button>
+                      </div>
+                    </div>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% end %>

@@ -1,0 +1,146 @@
+<% pos = @result["pos"] || [] %>
+<% field = ->(label, input) { content_tag(:div, content_tag(:label, label, class: "form--label", style: "font-size:12px;") + content_tag(:div, input, class: "form--field-container"), class: "form--field", style: "margin:0;") } %>
+
+<p class="op-form-hint" style="max-width: 820px;"><%= t("vendor_management.po_ai.review_hint") %></p>
+
+<% Array(@result["warnings"]).each do |message| %>
+  <div class="flash warning" style="max-width: 820px;"><%= message %></div>
+<% end %>
+
+<% if @result["mapping"].present? %>
+  <details style="margin: 8px 0 16px;">
+    <summary><%= t("vendor_management.po_ai.mapping_summary") %></summary>
+    <% @result["mapping"].each do |m| %>
+      <p style="font-size:12px; margin: 6px 0;">
+        <strong><%= m["sheet"] %></strong>
+        (<%= t("vendor_management.po_ai.header_row") %> <%= m["header_row"] %>):
+        <%= m["columns"].select { |_k, v| v }.map { |k, v| "#{k.humanize} = #{('A'.ord + v).chr rescue v}" }.join(", ") %>
+      </p>
+    <% end %>
+  </details>
+<% end %>
+
+<%= form_with url: projects_confirm_vendor_management_po_intake_path(@project, @import), method: :post, local: true, data: { turbo: false } do %>
+  <% pos.each do |po| %>
+    <% i = po["index"] %>
+    <% prefix = "pos[#{i}]" %>
+    <div style="border: 1px solid var(--borderColor-default, #d0d7de); border-radius: 8px; padding: 14px 16px; margin: 0 0 20px; max-width: 1180px;">
+      <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 10px;">
+        <h3 style="margin:0;"><%= po["po_number"].presence || "PO #{i + 1}" %>
+          <% if po["source_sheet"] %><span style="font-weight:normal; font-size:12px; color:#57606a;">(<%= po["source_sheet"] %>)</span><% end %>
+        </h3>
+        <label style="font-size:13px;">
+          <%= check_box_tag "#{prefix}[skip]", "1", po["duplicate_in_project"], id: "skip-#{i}" %>
+          <%= t("vendor_management.po_ai.skip_po") %>
+        </label>
+      </div>
+      <%= hidden_field_tag "#{prefix}[index]", i %>
+      <%= hidden_field_tag "#{prefix}[o_and_d]", po["o_and_d"] %>
+      <%= hidden_field_tag "#{prefix}[total_value]", po["total_value"] %>
+
+      <% Array(po["warnings"]).each do |message| %>
+        <div class="flash warning" style="margin: 0 0 8px;"><%= message %></div>
+      <% end %>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 16px;">
+        <%= field.call(t("vendor_management.po_ai.po_number"), text_field_tag("#{prefix}[po_number]", po["po_number"])) %>
+        <%= field.call(t("vendor_management.po_ai.issue_date"), date_field_tag("#{prefix}[issue_date]", po["issue_date"])) %>
+        <%= field.call(t("vendor_management.po_ai.currency"), select_tag("#{prefix}[currency]", options_for_select(VendorManagement::PurchaseOrder::CURRENCIES, po["currency"]))) %>
+        <% match = po["vendor_match"] %>
+        <%= field.call(t("vendor_management.po_ai.vendor"),
+              select_tag("#{prefix}[vendor_id]",
+                         options_for_select([[t("vendor_management.po_ai.create_vendor"), "new"]] + @vendors.map { |v| [v.name, v.id] }, match ? match["id"] : "new"))) %>
+        <%= field.call(t("vendor_management.po_ai.new_vendor_name", supplier: po["supplier_name"].to_s), text_field_tag("#{prefix}[new_vendor_name]", po["supplier_name"])) %>
+        <%= field.call(t("vendor_management.po_ai.quotation_ref"), text_field_tag("#{prefix}[quotation_ref]", po["quotation_ref"])) %>
+        <%= field.call(t("vendor_management.po_ai.order_description"), text_field_tag("#{prefix}[order_description]", po["order_description"])) %>
+        <%= field.call(t("vendor_management.po_ai.payment_terms"), text_field_tag("#{prefix}[payment_terms]", po["payment_terms"])) %>
+        <%= field.call(t("vendor_management.po_ai.special_note"), text_field_tag("#{prefix}[special_note]", po["special_note"])) %>
+        <%= field.call(t("vendor_management.po_ai.incoterm"), text_field_tag("#{prefix}[incoterm]", po["incoterm"])) %>
+        <%= field.call(t("vendor_management.po_ai.delivery_address"), text_field_tag("#{prefix}[delivery_address]", po["delivery_address"])) %>
+        <%= field.call(t("vendor_management.po_ai.end_user_name"), text_field_tag("#{prefix}[end_user_name]", po["end_user_name"])) %>
+      </div>
+      <% if match %>
+        <p style="font-size:12px; color:#57606a; margin: 6px 0 0;"><%= t("vendor_management.po_ai.vendor_matched", name: match["name"], score: (match["score"] * 100).round) %></p>
+      <% end %>
+
+      <h4 style="margin: 16px 0 6px;"><%= t("vendor_management.po_ai.items") %> (<%= po["lines"].size %>)</h4>
+      <div class="generic-table--container">
+        <table class="generic-table" style="table-layout: auto;">
+          <thead>
+            <tr>
+              <% %w[skip section part_no description quantity unit_price total].each do |c| %>
+                <th style="padding: 4px 6px; font-size: 12px;"><%= t("vendor_management.po_ai.col_#{c}") %></th>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody>
+            <% po["lines"].each_with_index do |line, li| %>
+              <% lp = "#{prefix}[lines][#{li}]" %>
+              <% flagged = Array(line["flags"]).any? %>
+              <tr style="<%= 'background:#FFF8C5;' if flagged %>">
+                <td><%= check_box_tag "#{lp}[skip]", "1", false, id: "skip-#{i}-#{li}" %></td>
+                <td><%= text_field_tag "#{lp}[section]", line["section"], style: "min-width:110px;" %></td>
+                <td><%= text_field_tag "#{lp}[part_no]", line["part_no"], style: "min-width:110px;" %></td>
+                <td style="min-width: 280px;">
+                  <%= text_field_tag "#{lp}[description]", line["description"], style: "width:100%;" %>
+                  <% Array(line["flags"]).each do |flag| %>
+                    <div style="font-size:11px; color:#9A6700;"><%= flag %></div>
+                  <% end %>
+                </td>
+                <td><%= text_field_tag "#{lp}[quantity]", line["quantity"], size: 6 %></td>
+                <td><%= text_field_tag "#{lp}[unit_price]", line["unit_price"], size: 11 %></td>
+                <td style="text-align:right; white-space:nowrap;"><%= number_with_delimiter(format("%.2f", line["line_total"].to_f)) %></td>
+              </tr>
+            <% end %>
+            <% if po["lines"].empty? %>
+              <tr><td colspan="7" style="color:#57606a;"><%= t("vendor_management.po_ai.no_items") %></td></tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      <p style="text-align:right; margin: 6px 0 0;"><strong><%= t("vendor_management.po_ai.po_total") %>:</strong>
+        <%= number_with_delimiter(format("%.2f", po["total_value"].to_f)) %> <%= po["currency"] %></p>
+
+      <h4 style="margin: 16px 0 6px;"><%= t("vendor_management.po_ai.schedule") %> (<%= po["installments"].size %>)</h4>
+      <% if po["installments"].any? %>
+        <div class="generic-table--container">
+          <table class="generic-table" style="table-layout: auto;">
+            <thead>
+              <tr>
+                <% %w[skip description percent amount due_on].each do |c| %>
+                  <th style="padding: 4px 6px; font-size: 12px;"><%= t("vendor_management.po_ai.col_#{c}") %></th>
+                <% end %>
+              </tr>
+            </thead>
+            <tbody>
+              <% po["installments"].each_with_index do |row, ri| %>
+                <% rp = "#{prefix}[installments][#{ri}]" %>
+                <tr>
+                  <td><%= check_box_tag "#{rp}[skip]", "1", false, id: "skip-#{i}-i#{ri}" %></td>
+                  <td style="min-width: 280px;"><%= text_field_tag "#{rp}[description]", row["description"], style: "width:100%;" %></td>
+                  <td><%= text_field_tag "#{rp}[percent]", row["percent"], size: 6 %></td>
+                  <td><%= text_field_tag "#{rp}[amount]", row["amount"], size: 12 %></td>
+                  <td><%= date_field_tag "#{rp}[due_on]", row["due_on"] %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p style="color:#57606a;"><%= t("vendor_management.po_ai.no_schedule") %></p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="form--actions">
+    <%= submit_tag t("vendor_management.po_ai.create_pos"), class: "button -highlight" %>
+    <%= link_to t("vendor_management.po_ai.cancel"), projects_vendor_management_po_intake_destroy_path(@project, @import), data: { turbo_method: :delete }, class: "button" %>
+  </div>
+<% end %>
+
+<% if @result["ocr_text"].present? %>
+  <details style="margin-top: 24px; max-width: 1180px;">
+    <summary><%= t("vendor_management.po_ai.ocr_text") %></summary>
+    <pre style="white-space: pre-wrap; font-size: 11px; max-height: 360px; overflow:auto;"><%= @result["ocr_text"] %></pre>
+  </details>
+<% end %>

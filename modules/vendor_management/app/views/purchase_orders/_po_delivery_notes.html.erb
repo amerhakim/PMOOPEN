@@ -1,0 +1,19 @@
+<% po = @purchase_order %>
+<% notes = VendorManagement::DeliveryNote.without_data.where(purchase_order: po).includes(:uploaded_by).order(created_at: :desc).to_a %>
+
+<div style="margin-top: 24px;"></div>
+<div class="po-panel">
+  <h3><%= t("vendor_management.delivery_notes.title") %> <span class="po-pill info"><%= t("vendor_management.delivery_notes.files_count", count: notes.size) %></span></h3>
+  <% if can_edit? %>
+    <%= form_with url: projects_vendor_management_delivery_notes_path(@project), method: :post, multipart: true, local: true, data: { turbo: false } do %>
+      <input type="hidden" name="purchase_order_id" value="<%= po.id %>">
+      <input type="hidden" name="return_to" value="po">
+      <div class="po-drop" data-po-dropzone>
+        <p><strong><%= t("vendor_management.delivery_notes.drop_here") %></strong> <%= t("vendor_management.delivery_notes.drop_hint") %></p>
+        <label class="button -highlight" for="po-delivery-files" style="margin:0; cursor:pointer;"><%= t("vendor_management.delivery_notes.choose_files") %></label>
+        <input id="po-delivery-files" type="file" name="files[]" multiple accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.tif,.tiff,application/pdf,image/*" hidden>
+      </div>
+    <% end %>
+  <% end %>
+  <%= render "delivery_notes/file_list", notes: notes, show_po: false %>
+</div>

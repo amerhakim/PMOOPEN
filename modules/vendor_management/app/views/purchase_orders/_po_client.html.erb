@@ -1,0 +1,13 @@
+<%# Posted with the order-details form (id po_form) through the HTML form attribute, so the
+    client data can sit at the very bottom of the page. %>
+<div class="po-grid">
+  <% %i[end_user_name end_user_contact_name end_user_contact_phone end_user_contact_email end_user_address].each do |attribute| %>
+    <div class="po-f <%= 'wide' if attribute == :end_user_address %>">
+      <label for="purchase_order_<%= attribute %>"><%= t("vendor_management.po_form.#{attribute}_label") %></label>
+      <%= text_field_tag "purchase_order[#{attribute}]", @purchase_order.public_send(attribute), id: "purchase_order_#{attribute}", form: "po_form" %>
+    </div>
+  <% end %>
+</div>
+<div class="po-formbar">
+  <%= submit_tag t("vendor_management.po_form.submit"), form: "po_form", class: "button -highlight" %>
+</div>

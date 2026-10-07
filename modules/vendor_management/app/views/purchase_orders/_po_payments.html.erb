@@ -1,0 +1,93 @@
+<h3><%= t("vendor_management.purchase_orders.payments_title") %></h3>
+
+<% paid_pct = @purchase_order.total_value.to_f.positive? ? [(@purchase_order.total_paid.to_f / @purchase_order.total_value.to_f * 100), 100].min : 0 %>
+<div style="margin-bottom: 12px;">
+  <div style="background:#F6F8FA; border-radius:6px; height:10px; width:100%; max-width:420px; overflow:hidden;">
+    <div style="background:#1A7F37; height:100%; width:<%= paid_pct.round(1) %>%;"></div>
+  </div>
+  <p style="margin-top:6px;">
+    <strong><%= t("vendor_management.purchase_orders.total_paid") %>:</strong>
+    <%= number_to_currency(@purchase_order.total_paid, unit: "#{@purchase_order.currency} ", format: "%u%n") %>
+    &nbsp;|&nbsp;
+    <strong><%= t("vendor_management.purchase_orders.remaining_in_po") %>:</strong>
+    <%= number_to_currency(@purchase_order.remaining_in_po, unit: "#{@purchase_order.currency} ", format: "%u%n") %>
+    &nbsp;|&nbsp;
+    <strong><%= t("vendor_management.purchase_orders.payment_status") %>:</strong>
+    <%= @purchase_order.payment_status.humanize %>
+  </p>
+</div>
+
+<div class="generic-table--container">
+  <div class="generic-table--results-container">
+    <table class="generic-table">
+      <colgroup>
+        <col><col><col><col><col>
+        <% if can_edit? %><col><% end %>
+      </colgroup>
+      <thead>
+        <tr>
+          <% %w[date invoice_no amount description note].each do |column| %>
+            <th style="padding: 6px 8px;">
+              <%= t("vendor_management.payments.#{column}") %>
+            </th>
+          <% end %>
+          <% if can_edit? %><th></th><% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <% @purchase_order.po_payments.each do |payment| %>
+          <tr>
+            <td><%= payment.paid_on&.strftime("%d-%b-%Y") %></td>
+            <td><%= payment.invoice_no %></td>
+            <td><%= number_to_currency(payment.amount, unit: "#{@purchase_order.currency} ", format: "%u%n") %></td>
+            <td><%= payment.description %></td>
+            <td><%= payment.note %></td>
+            <% if can_edit? %>
+              <td>
+                <%= link_to op_icon("icon icon-edit"), projects_edit_vendor_management_po_payment_path(@project, payment),
+                            title: t(:button_edit) %>
+                <%= link_to op_icon("icon icon-delete"), projects_vendor_management_po_payment_destroy_path(@project, payment),
+                            data: { turbo_method: :delete, turbo_confirm: t("text_are_you_sure") }, title: t(:button_delete) %>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+        <% if @purchase_order.po_payments.empty? %>
+          <tr class="generic-table--empty-row">
+            <td colspan="6"><%= t("vendor_management.payments.no_payments") %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<% if can_edit? %>
+  <%= form_with url: projects_vendor_management_po_payments_path(@project, @purchase_order), method: :post, scope: "po_payment", local: true do |f| %>
+    <div style="display:flex; gap:12px; align-items:flex-end; margin-top:8px; flex-wrap:wrap;">
+      <div>
+        <label class="form--label"><%= t("vendor_management.payments.date") %></label><br>
+        <%= f.date_field :paid_on %>
+      </div>
+      <div>
+        <label class="form--label"><%= t("vendor_management.payments.invoice_no") %></label><br>
+        <%= f.text_field :invoice_no %>
+      </div>
+      <div>
+        <label class="form--label"><%= t("vendor_management.payments.amount") %></label><br>
+        <%= f.number_field :amount, step: "0.01" %>
+      </div>
+      <div>
+        <label class="form--label"><%= t("vendor_management.payments.description") %></label><br>
+        <%= f.text_field :description %>
+      </div>
+      <div>
+        <label class="form--label"><%= t("vendor_management.payments.note") %></label><br>
+        <%= f.text_field :note %>
+      </div>
+      <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary)) { t("vendor_management.payments.add") } %>
+    </div>
+  <% end %>
+<% end %>
+
+

@@ -1,0 +1,131 @@
+<% html_title t("vendor_management.delivery_notes.page_title") %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { t("vendor_management.delivery_notes.page_title") }
+    header.with_breadcrumbs([t("vendor_management.delivery_notes.page_title")])
+  end
+%>
+
+<%= render "purchase_orders/po_page_styles" %>
+
+<div class="po-page">
+  <p class="po-sub"><%= t("vendor_management.delivery_notes.page_intro") %></p>
+
+  <div class="po-strip" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+    <div>
+      <div class="po-k"><%= t("vendor_management.delivery_notes.stat_files") %></div>
+      <div class="po-v"><%= @notes.size %></div>
+    </div>
+    <div>
+      <div class="po-k"><%= t("vendor_management.delivery_notes.stat_pos_with_notes") %></div>
+      <div class="po-v"><%= @pos_with_notes %> <small><%= t("vendor_management.delivery_notes.of_count", count: @purchase_orders.size) %></small></div>
+    </div>
+    <div>
+      <div class="po-k"><%= t("vendor_management.delivery_notes.stat_missing") %></div>
+      <div class="po-v"><%= @delivered_without_note %></div>
+      <% if @delivered_without_note.positive? %><span class="po-pill warn" style="margin-top:6px"><%= t("vendor_management.delivery_notes.needs_file") %></span><% end %>
+    </div>
+  </div>
+
+  <% if @can_edit %>
+    <h2 class="po-h"><%= t("vendor_management.delivery_notes.upload") %></h2>
+    <div class="po-panel">
+      <%= form_with url: projects_vendor_management_delivery_notes_path(@project), method: :post, multipart: true, local: true, data: { turbo: false } do %>
+        <div class="po-pad" style="padding-bottom: 0;">
+          <label class="form--label" for="purchase_order_id"><%= t("vendor_management.delivery_notes.attach_to") %></label><br>
+          <select name="purchase_order_id" id="purchase_order_id" style="max-width: 460px; width: 100%;">
+            <% @purchase_orders.each do |po| %>
+              <option value="<%= po.id %>"><%= po.po_number %> · <%= po.vendor&.name %></option>
+            <% end %>
+            <option value=""><%= t("vendor_management.delivery_notes.project_file") %></option>
+          </select>
+        </div>
+        <div class="po-drop" data-po-dropzone>
+          <p><strong><%= t("vendor_management.delivery_notes.drop_here") %></strong> <%= t("vendor_management.delivery_notes.drop_hint") %></p>
+          <label class="button -highlight" for="project-delivery-files" style="margin:0; cursor:pointer;"><%= t("vendor_management.delivery_notes.choose_files") %></label>
+          <input id="project-delivery-files" type="file" name="files[]" multiple accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.tif,.tiff,application/pdf,image/*" hidden>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <h2 class="po-h"><%= t("vendor_management.delivery_notes.uploaded_files") %></h2>
+  <div class="po-panel">
+    <div class="po-filter">
+      <input type="search" id="dn-search" placeholder="<%= t("vendor_management.delivery_notes.search") %>" aria-label="<%= t("vendor_management.delivery_notes.search") %>">
+      <select id="dn-filter" aria-label="<%= t("vendor_management.delivery_notes.filter_po") %>">
+        <option value=""><%= t("vendor_management.delivery_notes.all_pos") %></option>
+        <% @purchase_orders.each do |po| %><option value="<%= po.id %>"><%= po.po_number %></option><% end %>
+        <option value="none"><%= t("vendor_management.delivery_notes.not_linked") %></option>
+      </select>
+    </div>
+    <div id="dn-list">
+      <% if @notes.empty? %>
+        <div class="po-empty"><%= t("vendor_management.delivery_notes.none_yet") %></div>
+      <% else %>
+        <ul class="po-files">
+          <% @notes.each do |note| %>
+            <li class="po-file" data-name="<%= note.filename.downcase %>" data-po="<%= note.purchase_order_id || "none" %>">
+              <span class="po-fi"><%= note.extension.delete(".").upcase.first(4) %></span>
+              <div class="po-fmeta">
+                <%= link_to note.filename, projects_vendor_management_delivery_note_download_path(@project, note) %>
+                <span>
+                  <% if note.purchase_order %>
+                    <%= link_to note.purchase_order.po_number, projects_edit_vendor_management_purchase_order_path(@project, note.purchase_order) %>
+                  <% else %><%= t("vendor_management.delivery_notes.not_linked") %><% end %>
+                  · <%= note.uploaded_by&.name %> · <%= l(note.created_at.to_date, format: :long) %> · <%= number_to_human_size(note.byte_size) %>
+                </span>
+              </div>
+              <% if @can_edit %>
+                <div class="po-cell">
+                  <div class="po-rowact">
+                    <%= link_to render("purchase_orders/icon", name: :download), projects_vendor_management_delivery_note_download_path(@project, note), title: t("vendor_management.delivery_notes.download"), "aria-label": t("vendor_management.delivery_notes.download") %>
+                    <button type="button" class="po-ib danger" data-po-confirm-open title="<%= t(:button_delete) %>" aria-label="<%= t(:button_delete) %>"><%= render("purchase_orders/icon", name: :delete) %></button>
+                  </div>
+                  <div class="po-confirm" role="alert">
+                    <%= t("vendor_management.delivery_notes.delete_q") %>
+                    <%= button_to t(:button_delete), projects_vendor_management_delivery_note_destroy_path(@project, note), method: :delete, class: "go", form: { data: { turbo: false } } %>
+                    <button type="button" data-po-confirm-cancel><%= t("vendor_management.po_page.keep") %></button>
+                  </div>
+                </div>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+        <div class="po-empty" id="dn-none" hidden><%= t("vendor_management.delivery_notes.no_match") %></div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<%= javascript_tag nonce: true do %>
+  (function () {
+    document.addEventListener("click", function (e) {
+      var ask = e.target.closest("[data-po-confirm-open]");
+      if (ask) { ask.closest(".po-cell").classList.add("confirming"); return; }
+      var keep = e.target.closest("[data-po-confirm-cancel]");
+      if (keep) keep.closest(".po-cell").classList.remove("confirming");
+    });
+    document.querySelectorAll("[data-po-dropzone]").forEach(function (zone) {
+      var input = zone.querySelector("input[type=file]");
+      var form = zone.closest("form");
+      input.addEventListener("change", function () { if (input.files.length) form.submit(); });
+      ["dragenter", "dragover"].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add("over"); }); });
+      ["dragleave", "drop"].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove("over"); }); });
+      zone.addEventListener("drop", function (e) {
+        if (e.dataTransfer && e.dataTransfer.files.length) { input.files = e.dataTransfer.files; form.submit(); }
+      });
+    });
+    var search = document.getElementById("dn-search"), filter = document.getElementById("dn-filter");
+    function apply() {
+      var q = search.value.toLowerCase(), f = filter.value, shown = 0;
+      document.querySelectorAll("#dn-list .po-file").forEach(function (li) {
+        var ok = (!q || li.getAttribute("data-name").indexOf(q) > -1) && (!f || li.getAttribute("data-po") === f);
+        li.hidden = !ok; if (ok) shown++;
+      });
+      var none = document.getElementById("dn-none"); if (none) none.hidden = shown !== 0;
+    }
+    search.addEventListener("input", apply); filter.addEventListener("change", apply);
+  })();
+<% end %>

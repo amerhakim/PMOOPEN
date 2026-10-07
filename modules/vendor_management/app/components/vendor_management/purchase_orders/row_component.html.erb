@@ -1,0 +1,18 @@
+<%= content_tag(:tr,
+                id: row_css_id,
+                class: row_css_class
+    ) do %>
+  <td class="select">
+    <%= check_box_tag "purchase_order_ids[]", purchase_order.id, false, id: "purchase-order-select-#{purchase_order.id}", data: { "checkable-target": "checkbox" }, "aria-label": purchase_order.po_number %>
+  </td>
+  <% columns.each do |column| %>
+    <td class="<%= column_css_class(column) %>">
+      <%= column_value(column) %>
+    </td>
+  <% end %>
+  <td class="buttons">
+    <% button_links.each do |link| %>
+      <%= link %>
+    <% end %>
+  </td>
+<% end %>

@@ -1,0 +1,396 @@
+<%
+  d = scope[:data]
+  gauge_pct = d[:due_total].zero? ? 0.0 : (d[:due_invoiced] / d[:due_total] * 100)
+  needle = payment_terms_gauge_needle(gauge_pct)
+  gauge_color = payment_terms_gauge_color(gauge_pct)
+
+  this_month_max = [d[:this_month][:total], 1].max
+  current_month_short = Date::ABBR_MONTHNAMES[Date.current.month]
+  current_year = Date.current.year
+
+  funnel_stages = [
+    { label: t("payment_terms.analytics.funnel_total"), value: d[:due_total], color: "#2563eb" },
+    { label: t("payment_terms.analytics.funnel_invoiced"), value: d[:due_invoiced], color: "#d97706" },
+    { label: t("payment_terms.analytics.funnel_collected"), value: d[:due_collected], color: "#16a34a" }
+  ]
+
+  palette = ["#2563eb", "#7c3aed", "#0891b2", "#d97706", "#65a30d", "#db2777", "#16a34a", "#4f46e5"]
+
+  # Donut segments (account-manager breakdown on the "all" scope, or a
+  # simple 2-way collected/awaiting split -- to date -- on a PM's own
+  # scope), built as stroke-dasharray/dashoffset pairs around one shared
+  # circle, same technique the approved mockup used.
+  circumference = 2 * Math::PI * 54
+  donut_acc = 0.0
+  if show_pm_am_breakdown
+    donut_title = t("payment_terms.analytics.by_account_manager")
+    donut_segments = d[:by_account_manager].each_with_index.map do |(name, value), i|
+      frac = d[:total].zero? ? 0.0 : value / d[:total]
+      len = circumference * frac
+      seg = { label: name, pct: payment_terms_pct(value, d[:total]), color: palette[i % palette.length], dasharray: "#{len} #{circumference - len}", dashoffset: -donut_acc }
+      donut_acc += len
+      seg
+    end
+  else
+    awaiting_to_date = d[:due_invoiced] - d[:due_collected]
+    len_col = d[:due_total].zero? ? 0.0 : (d[:due_collected] / d[:due_total] * circumference)
+    len_inv = d[:due_total].zero? ? 0.0 : (awaiting_to_date / d[:due_total] * circumference)
+    donut_title = t("payment_terms.analytics.status_split_title")
+    donut_segments = [
+      { label: t("payment_terms.analytics.funnel_collected"), pct: payment_terms_pct(d[:due_collected], d[:due_total]), color: "#16a34a", dasharray: "#{len_col} #{circumference - len_col}", dashoffset: 0 },
+      { label: t("payment_terms.payment_form.invoiced_label") + ", awaiting", pct: payment_terms_pct(awaiting_to_date, d[:due_total]), color: "#d97706", dasharray: "#{len_inv} #{circumference - len_inv}", dashoffset: -len_col }
+    ]
+  end
+
+  # Ranking bars -- "By Project Manager" (all scope) stays one flat color
+  # per bar; "Projects by value" (a PM's own scope) gets a real inline
+  # collected/issued/not-yet-invoiced breakdown inside each bar so its
+  # financial health reads at a glance.
+  if show_pm_am_breakdown
+    ranking_title = t("payment_terms.analytics.by_project_manager")
+    ranking_max = d[:by_project_manager].first&.last || 1
+    ranking_items = d[:by_project_manager].each_with_index.map do |(name, value), i|
+      {
+        name: name, value_label: payment_terms_compact_currency(value), pct: payment_terms_pct(value, d[:total]),
+        width_pct: [3, value / ranking_max * 100].max, weight: 700,
+        segments: [{ width_pct: 100, color: palette[i % palette.length] }]
+      }
+    end
+  else
+    ranking_title = t("payment_terms.analytics.projects_by_value")
+    ranking_max = d[:by_project].first&.dig(:total) || 1
+    ranking_items = d[:by_project].each_with_index.map do |row, i|
+      row_total = row[:total].zero? ? 1 : row[:total]
+      collected_pct = row[:collected] / row_total * 100
+      invoiced_pct = row[:invoiced_awaiting] / row_total * 100
+      not_invoiced_pct = [0, 100 - collected_pct - invoiced_pct].max
+      {
+        name: row[:project].name, value_label: payment_terms_compact_currency(row[:total]), pct: payment_terms_pct(row[:total], d[:total]),
+        width_pct: [3, row[:total] / ranking_max * 100].max, weight: i < 2 ? 700 : 400,
+        segments: [
+          { width_pct: collected_pct, color: "#16a34a" },
+          { width_pct: invoiced_pct, color: "#d97706" },
+          { width_pct: not_invoiced_pct, color: "#d0d7de" }
+        ]
+      }
+    end
+  end
+
+  monthly_current = d[:monthly_by_year][current_year] || Array.new(12) { { total: 0.0, issued: 0.0, collected: 0.0 } }
+  monthly_max = [monthly_current.map { |m| m[:total] }.max || 1, 1].max
+%>
+
+<!-- KPI row 1: portfolio-wide -->
+<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;">
+  <div class="card kpi-card" style="padding: 16px 18px; --accent: #2563eb;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+      <div class="eyebrow"><%= t("payment_terms.analytics.kpi_total") %></div>
+      <div style="width: 30px; height: 30px; border-radius: 8px; background: #dbeafe; display: flex; align-items: center; justify-content: center; color: #2563eb;" aria-hidden="true">$</div>
+    </div>
+    <div style="font-size: 22px; font-weight: 700;"><%= payment_terms_compact_currency(d[:total]) %></div>
+    <div style="font-size: 12px; color: #57606a; margin-top: 4px;"><%= t("payment_terms.analytics.kpi_total_sub", count: d[:payment_count], projects: d[:project_count]) %></div>
+    <div style="height: 5px; border-radius: 3px; background: #eaeef2; margin-top: 10px; overflow: hidden;"><div style="height: 100%; width: 100%; background: #2563eb; border-radius: 3px;"></div></div>
+  </div>
+  <div class="card kpi-card" style="padding: 16px 18px; --accent: #16a34a;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+      <div class="eyebrow"><%= t("payment_terms.analytics.kpi_collected") %></div>
+      <div style="width: 30px; height: 30px; border-radius: 8px; background: #dcfce7; display: flex; align-items: center; justify-content: center; color: #16a34a;" aria-hidden="true">&check;</div>
+    </div>
+    <div style="font-size: 22px; font-weight: 700; color: #16a34a;"><%= payment_terms_compact_currency(d[:collected]) %></div>
+    <div style="font-size: 12px; color: #57606a; margin-top: 4px;"><%= payment_terms_pct(d[:collected], d[:total]) %> <%= t("payment_terms.analytics.of_total") %></div>
+    <div style="height: 5px; border-radius: 3px; background: #eaeef2; margin-top: 10px; overflow: hidden;"><div style="height: 100%; width: <%= [2, payment_terms_pct(d[:collected], d[:total]).to_f].max %>%; background: #16a34a; border-radius: 3px;"></div></div>
+  </div>
+  <div class="card kpi-card" style="padding: 16px 18px; --accent: #d97706;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+      <div class="eyebrow"><%= t("payment_terms.analytics.kpi_invoiced_awaiting") %></div>
+      <div style="width: 30px; height: 30px; border-radius: 8px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706;" aria-hidden="true">&#9201;</div>
+    </div>
+    <div style="font-size: 22px; font-weight: 700; color: #d97706;"><%= payment_terms_compact_currency(d[:invoiced_awaiting]) %></div>
+    <div style="font-size: 12px; color: #57606a; margin-top: 4px;"><%= payment_terms_pct(d[:invoiced_awaiting], d[:total]) %> <%= t("payment_terms.analytics.of_total") %></div>
+    <div style="height: 5px; border-radius: 3px; background: #eaeef2; margin-top: 10px; overflow: hidden;"><div style="height: 100%; width: <%= [2, payment_terms_pct(d[:invoiced_awaiting], d[:total]).to_f].max %>%; background: #d97706; border-radius: 3px;"></div></div>
+  </div>
+  <div class="card kpi-card" style="padding: 16px 18px; --accent: #7c3aed;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+      <div class="eyebrow"><%= t("payment_terms.analytics.kpi_not_invoiced") %></div>
+      <div style="width: 30px; height: 30px; border-radius: 8px; background: #ede9fe; display: flex; align-items: center; justify-content: center; color: #7c3aed;" aria-hidden="true">&bull;&bull;&bull;</div>
+    </div>
+    <div style="font-size: 22px; font-weight: 700; color: #7c3aed;"><%= payment_terms_compact_currency(d[:not_invoiced]) %></div>
+    <div style="font-size: 12px; color: #57606a; margin-top: 4px;"><%= payment_terms_pct(d[:not_invoiced], d[:total]) %> <%= t("payment_terms.analytics.of_total") %></div>
+    <div style="height: 5px; border-radius: 3px; background: #eaeef2; margin-top: 10px; overflow: hidden;"><div style="height: 100%; width: <%= [2, payment_terms_pct(d[:not_invoiced], d[:total]).to_f].max %>%; background: #7c3aed; border-radius: 3px;"></div></div>
+  </div>
+  <div class="card kpi-card" style="padding: 16px 18px; --accent: #e11d48;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+      <div class="eyebrow"><%= t("payment_terms.analytics.kpi_overdue") %></div>
+      <div style="width: 30px; height: 30px; border-radius: 8px; background: #ffe4e6; display: flex; align-items: center; justify-content: center; color: #e11d48;" aria-hidden="true">!</div>
+    </div>
+    <div style="font-size: 22px; font-weight: 700;"><%= d[:overdue_count] %></div>
+    <div style="font-size: 12px; color: #57606a; margin-top: 4px;"><%= t("payment_terms.analytics.kpi_overdue_sub") %></div>
+    <div style="height: 5px; border-radius: 3px; background: #eaeef2; margin-top: 10px; overflow: hidden;"><div style="height: 100%; width: 4%; background: #e11d48; border-radius: 3px;"></div></div>
+  </div>
+</div>
+
+<!-- KPI row 2: issue-rate gauge + this month chart + closed projects -->
+<div style="display: grid; grid-template-columns: 1.25fr 0.9fr 0.9fr; gap: 14px; align-items: stretch; margin-top: 14px;">
+  <div class="card" style="padding: 20px 24px; display: flex; flex-direction: column; gap: 4px;">
+    <div class="eyebrow"><%= raw(t("payment_terms.analytics.issue_rate_title", month: current_month_short, year: current_year)) %></div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <svg width="190" height="128" viewBox="0 0 200 134">
+        <defs>
+          <filter id="needleShadow-<%= scope[:key] %>" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#17242f" flood-opacity="0.35"></feDropShadow>
+          </filter>
+        </defs>
+        <path d="M 20 100 A 80 80 0 0 1 100 20" fill="none" stroke="#e11d48" stroke-width="14" stroke-linecap="round"></path>
+        <path d="M 100 20 A 80 80 0 0 1 156.57 43.43" fill="none" stroke="#d97706" stroke-width="14" stroke-linecap="round"></path>
+        <path d="M 156.57 43.43 A 80 80 0 0 1 180 100" fill="none" stroke="#16a34a" stroke-width="14" stroke-linecap="round"></path>
+        <text x="14" y="114" font-size="9" fill="#9aa3ad" text-anchor="middle">0</text>
+        <text x="100" y="14" font-size="9" fill="#9aa3ad" text-anchor="middle">50</text>
+        <text x="163" y="36" font-size="9" fill="#9aa3ad" text-anchor="middle">75</text>
+        <text x="186" y="114" font-size="9" fill="#9aa3ad" text-anchor="middle">100</text>
+        <g filter="url(#needleShadow-<%= scope[:key] %>)">
+          <line x1="100" y1="100" x2="<%= needle[:x] %>" y2="<%= needle[:y] %>" stroke="#17242f" stroke-width="4" stroke-linecap="round"></line>
+          <circle cx="100" cy="100" r="8" fill="#fff" stroke="#17242f" stroke-width="3"></circle>
+        </g>
+        <text x="100" y="124" text-anchor="middle" font-size="24" font-weight="800" fill="<%= gauge_color %>"><%= gauge_pct.round %>%</text>
+      </svg>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 13px;"><span style="font-weight: 700;"><%= payment_terms_compact_currency(d[:due_invoiced]) %></span> <%= t("payment_terms.analytics.issue_rate_due") %><br><span style="font-weight: 700;"><%= payment_terms_compact_currency(d[:due_total]) %></span> <%= t("payment_terms.analytics.issue_rate_due_suffix") %></div>
+        <div style="display:flex; flex-direction:column; gap:3px; font-size: 11px; color: #57606a;">
+          <span><span class="dot" style="background:#16a34a;"></span>&#8805;75% <%= t("payment_terms.analytics.issue_rate_on_track") %></span>
+          <span><span class="dot" style="background:#d97706;"></span>50&ndash;74% <%= t("payment_terms.analytics.issue_rate_watch") %></span>
+          <span><span class="dot" style="background:#e11d48;"></span>&lt;50% <%= t("payment_terms.analytics.issue_rate_behind") %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;">
+    <div class="eyebrow"><%= t("payment_terms.analytics.this_month_title", month: current_month_short, year: current_year) %></div>
+    <div style="display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; justify-content: center;">
+      <% [[t("payment_terms.analytics.this_month_expected"), d[:this_month][:total], "#2563eb"], [t("payment_terms.analytics.this_month_issued"), d[:this_month][:issued], "#d97706"], [t("payment_terms.analytics.this_month_collected"), d[:this_month][:collected], "#16a34a"]].each do |tm_label, tm_value, tm_color| %>
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+            <span style="color: #57606a;"><%= tm_label %></span>
+            <span style="font-weight: 700; color: <%= tm_color %>;"><%= payment_terms_compact_currency(tm_value) %></span>
+          </div>
+          <div style="height: 10px; background: #eaeef2; border-radius: 5px; overflow: hidden;">
+            <div style="height: 100%; border-radius: 5px; width: <%= [2, this_month_max.zero? ? 0 : (tm_value / this_month_max * 100)].max %>%; background: <%= tm_color %>;"></div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <% a = d[:archived] %>
+  <div class="card" style="padding: 20px 24px; display: flex; flex-direction: column; gap: 12px;">
+    <div class="eyebrow"><%= t("payment_terms.analytics.archived_title") %></div>
+    <% if a[:project_count].positive? %>
+      <div style="font-size: 20px; font-weight: 700;"><%= payment_terms_compact_currency(a[:total]) %></div>
+      <div style="font-size: 12px; color: #57606a;"><%= t("payment_terms.analytics.archived_sub", count: a[:project_count]) %></div>
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; border-top: 1px solid #eaeef2; padding-top: 10px;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px;"><span style="color:#57606a;"><%= t("payment_terms.analytics.funnel_collected") %></span><span style="font-weight:600; color:#16a34a;"><%= payment_terms_compact_currency(a[:collected]) %></span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px;"><span style="color:#57606a;"><%= t("payment_terms.analytics.open_balance") %></span><span style="font-weight:600; color:<%= a[:open_balance].positive? ? "#e11d48" : "#57606a" %>;"><%= payment_terms_compact_currency(a[:open_balance]) %></span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; border-top: 1px dashed #eaeef2; padding-top: 6px;"><span style="color:#57606a;"><%= t("payment_terms.analytics.outstanding_all") %></span><span style="font-weight:700;"><%= payment_terms_compact_currency(d[:invoiced_awaiting] + d[:not_invoiced] + a[:open_balance]) %></span></div>
+      </div>
+    <% else %>
+      <div style="font-size: 13px; color: #57606a; padding: 10px 0;"><%= t("payment_terms.analytics.archived_none") %></div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Funnel -->
+<div class="card" style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; margin-top: 14px;">
+  <div>
+    <div class="eyebrow"><%= t("payment_terms.analytics.funnel_title") %></div>
+    <p style="margin: 6px 0 0; font-size: 12px; color: #57606a;"><%= t("payment_terms.analytics.funnel_note", month: current_month_short, year: current_year) %></p>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 14px; max-width: 640px;">
+    <% funnel_stages.each do |stage| %>
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+          <span><%= stage[:label] %></span>
+          <span><%= payment_terms_compact_currency(stage[:value]) %> &middot; <%= payment_terms_pct(stage[:value], d[:due_total]) %></span>
+        </div>
+        <div style="height: 26px; background: #eaeef2; border-radius: 5px; overflow: hidden;">
+          <div style="height: 100%; border-radius: 5px; width: <%= stage[:label] == funnel_stages.first[:label] ? 100 : [4, payment_terms_pct(stage[:value], d[:due_total]).to_f].max %>%; background: <%= stage[:color] %>;"></div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% a = d[:archived] %>
+<% if a[:project_count].positive? && a[:total].abs.positive? %>
+  <% invoiced_total = a[:total] - a[:not_invoiced] %>
+  <div class="card" style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; margin-top: 14px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+      <div>
+        <div class="eyebrow"><%= t("payment_terms.analytics.archived_funnel_title") %></div>
+        <p style="margin: 6px 0 0; font-size: 12px; color: #57606a;"><%= t("payment_terms.analytics.archived_funnel_note") %></p>
+      </div>
+      <%= link_to t("payment_terms.analytics.view_archived"), payment_terms_archived_path, style: "font-size: 13px; font-weight: 600; white-space: nowrap;" %>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; max-width: 640px;">
+      <% [[t("payment_terms.analytics.funnel_total"), a[:total], "#2563eb", 100],
+          [t("payment_terms.analytics.funnel_invoiced"), invoiced_total, "#d97706", nil],
+          [t("payment_terms.analytics.funnel_collected"), a[:collected], "#16a34a", nil],
+          [t("payment_terms.analytics.open_balance"), a[:open_balance], "#e11d48", nil]].each do |label, value, color, fixed| %>
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            <span style="<%= "color:#e11d48;" if color == "#e11d48" %>"><%= label %></span>
+            <span><%= payment_terms_compact_currency(value) %> &middot; <%= payment_terms_pct(value, a[:total]) %></span>
+          </div>
+          <div style="height: 26px; background: #eaeef2; border-radius: 5px; overflow: hidden;">
+            <div style="height: 100%; border-radius: 5px; width: <%= fixed || [value.positive? ? 2 : 0, [payment_terms_pct(value, a[:total]).to_f, 100].min].max %>%; background: <%= color %>;"></div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <% if a[:open_projects].any? %>
+      <div style="border-top: 1px solid #eaeef2; padding-top: 12px;">
+        <div class="eyebrow" style="color: #e11d48;"><%= t("payment_terms.analytics.open_balance_title", count: a[:open_projects].size) %></div>
+        <table class="pt-table" style="margin-top: 8px;">
+          <tbody>
+            <% a[:open_projects].first(8).each do |row| %>
+              <tr>
+                <td><%= User.current.admin? ? link_to(row[:project].name, projects_payment_terms_path(row[:project])) : row[:project].name %></td>
+                <td style="color:#57606a;"><%= row[:pm_names].join(", ") %></td>
+                <td style="text-align:right; font-weight:600; color:#e11d48;"><%= payment_terms_compact_currency(row[:amount]) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<!-- Monthly (full width, 12 months, 3 bars, year-navigable via JS) -->
+<div class="card" style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; margin-top: 14px;"
+     data-monthly-chart='<%= raw(d[:monthly_by_year].to_json) %>' data-current-year="<%= current_year %>" data-cutoff-month="<%= Date.current.month %>">
+  <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+    <div>
+      <div class="eyebrow"><%= t("payment_terms.analytics.monthly_title") %></div>
+      <p style="margin: 6px 0 0; font-size: 12px; color: #57606a; max-width: 760px;"><%= t("payment_terms.analytics.monthly_note", month: current_month_short, year: current_year) %></p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; flex: 0 0 auto;">
+      <button type="button" class="nav-btn" data-year-prev aria-label="Previous year">&lsaquo;</button>
+      <span style="font-size: 15px; font-weight: 700; min-width: 42px; text-align: center;" data-year-label><%= current_year %></span>
+      <button type="button" class="nav-btn" data-year-next aria-label="Next year">&rsaquo;</button>
+    </div>
+  </div>
+  <p style="margin: 0; font-size: 12px; color: #9aa3ad; font-style: italic;" data-empty-note hidden><%= t("payment_terms.analytics.monthly_empty", year: current_year) %></p>
+  <div style="display: flex; align-items: center; gap: 16px;">
+    <span style="display: flex; align-items: center; gap: 5px; font-size: 11px; color: #57606a;"><span class="dot" style="background: #2563eb;"></span><%= t("payment_terms.analytics.monthly_expected") %></span>
+    <span style="display: flex; align-items: center; gap: 5px; font-size: 11px; color: #57606a;"><span class="dot" style="background: #d97706;"></span><%= t("payment_terms.analytics.monthly_issued") %></span>
+    <span style="display: flex; align-items: center; gap: 5px; font-size: 11px; color: #57606a;"><span class="dot" style="background: #16a34a;"></span><%= t("payment_terms.analytics.monthly_collected") %></span>
+  </div>
+  <div style="display: flex; align-items: flex-end; gap: 6px; height: 190px; padding-top: 10px;">
+    <% %w[Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec].each_with_index do |mon, i| %>
+      <% m = monthly_current[i] %>
+      <div style="flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px;" data-month-bar>
+        <div style="display: flex; align-items: flex-end; gap: 2px; height: 100%;">
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%;">
+            <div style="font-size: 9px; font-weight: 700; color: #17242f; margin-bottom: 2px; white-space: nowrap;" data-label-total<%= " hidden".html_safe if m[:total] <= 0 %>><%= payment_terms_chart_short(m[:total]) %></div>
+            <div style="width: 11px; height: <%= [2, m[:total] / monthly_max * 100].max %>%; min-height: 2px; background: #2563eb; border-radius: 2px 2px 0 0;" data-bar-total></div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%;">
+            <div style="font-size: 9px; font-weight: 700; color: #d97706; margin-bottom: 2px; white-space: nowrap;" data-label-issued<%= " hidden".html_safe if m[:issued] <= 0 %>><%= payment_terms_chart_short(m[:issued]) %></div>
+            <div style="width: 11px; height: <%= [2, m[:issued] / monthly_max * 100].max %>%; min-height: 2px; background: #d97706; border-radius: 2px 2px 0 0;" data-bar-issued></div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%;">
+            <div style="font-size: 9px; font-weight: 700; color: #16a34a; margin-bottom: 2px; white-space: nowrap;" data-label-collected<%= " hidden".html_safe if m[:collected] <= 0 %>><%= payment_terms_chart_short(m[:collected]) %></div>
+            <div style="width: 11px; height: <%= [2, m[:collected] / monthly_max * 100].max %>%; min-height: 2px; background: #16a34a; border-radius: 2px 2px 0 0;" data-bar-collected></div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #57606a; font-weight: 600;"><%= mon %></div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Donut + ranking -->
+<div style="display: grid; grid-template-columns: 420px 1fr; gap: 14px; align-items: stretch; margin-top: 14px;">
+  <div class="card" style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;">
+    <div class="eyebrow"><%= donut_title %></div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <svg width="140" height="140" viewBox="0 0 140 140" style="flex: 0 0 auto; transform: rotate(-90deg);">
+        <circle cx="70" cy="70" r="54" fill="none" stroke="#eaeef2" stroke-width="20"></circle>
+        <% donut_segments.each do |seg| %>
+          <circle cx="70" cy="70" r="54" fill="none" stroke="<%= seg[:color] %>" stroke-width="20"
+                  stroke-dasharray="<%= seg[:dasharray] %>" stroke-dashoffset="<%= seg[:dashoffset] %>" stroke-linecap="butt"></circle>
+        <% end %>
+      </svg>
+      <div style="display: flex; flex-direction: column; gap: 10px; flex: 1 1 auto;">
+        <% donut_segments.each do |seg| %>
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span><span class="dot" style="background: <%= seg[:color] %>;"></span><%= seg[:label] %></span>
+            <span style="color: #57606a;"><%= seg[:pct] %></span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div class="eyebrow"><%= ranking_title %></div>
+      <% unless show_pm_am_breakdown %>
+        <div style="display: flex; gap: 12px; font-size: 11px; color: #57606a;">
+          <span><span class="dot" style="background:#16a34a;"></span><%= t("payment_terms.analytics.financial_split_legend_collected") %></span>
+          <span><span class="dot" style="background:#d97706;"></span><%= t("payment_terms.analytics.financial_split_legend_issued") %></span>
+          <span><span class="dot" style="background:#d0d7de;"></span><%= t("payment_terms.analytics.financial_split_legend_not_invoiced") %></span>
+        </div>
+      <% end %>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <% ranking_items.each do |r| %>
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+            <span style="font-weight: <%= r[:weight] %>;"><%= r[:name] %></span>
+            <span style="color: #57606a;"><%= r[:value_label] %> &middot; <%= r[:pct] %></span>
+          </div>
+          <div style="height: 10px; background: #eaeef2; border-radius: 5px; overflow: hidden;">
+            <div style="height: 100%; width: <%= r[:width_pct] %>%; border-radius: 5px; overflow: hidden; display: flex;">
+              <% r[:segments].each do |seg| %>
+                <div style="height: 100%; width: <%= seg[:width_pct] %>%; background: <%= seg[:color] %>;"></div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Detail table -->
+<div class="card" style="padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+  <div class="eyebrow"><%= t("payment_terms.analytics.table_title", count: d[:by_project].size) %></div>
+  <table class="pt-table">
+    <thead>
+      <tr>
+        <th><%= t("payment_terms.analytics.table_project") %></th>
+        <th><%= t("payment_terms.analytics.table_pm") %></th>
+        <th><%= t("payment_terms.analytics.table_am") %></th>
+        <th style="text-align:right;"><%= t("payment_terms.analytics.table_total") %></th>
+        <th style="text-align:right;"><%= t("payment_terms.analytics.table_collected") %></th>
+        <th style="text-align:right;"><%= t("payment_terms.analytics.table_invoiced") %></th>
+        <th style="text-align:right;"><%= t("payment_terms.analytics.table_not_invoiced") %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% d[:by_project].each do |row| %>
+        <tr>
+          <td style="font-weight: 600;"><%= row[:project].name %></td>
+          <td><%= row[:pm_names].presence&.join(", ") || t("payment_terms.analytics.unassigned") %></td>
+          <td><%= row[:am].presence || t("payment_terms.analytics.unassigned") %></td>
+          <td style="text-align:right;"><%= payment_terms_compact_currency(row[:total]) %></td>
+          <td style="text-align:right; color: #16a34a;"><%= row[:collected].positive? ? payment_terms_compact_currency(row[:collected]) : "—" %></td>
+          <td style="text-align:right; color: #d97706;"><%= row[:invoiced_awaiting].positive? ? payment_terms_compact_currency(row[:invoiced_awaiting]) : "—" %></td>
+          <td style="text-align:right; color: #57606a;"><%= row[:not_invoiced].positive? ? payment_terms_compact_currency(row[:not_invoiced]) : "—" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+

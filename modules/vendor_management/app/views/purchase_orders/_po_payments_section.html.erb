@@ -1,0 +1,130 @@
+<% po = @purchase_order %>
+<% money = ->(amount) { number_to_currency(amount, unit: "", format: "%n") } %>
+<% installments = po.po_installments.to_a %>
+<% unallocated = po.total_paid.to_f %>
+
+<h2 class="po-h"><%= t("vendor_management.po_page.payments_heading") %>
+  <span class="po-h-meta"><%= t("vendor_management.po_page.payments_meta", terms: po.payment_terms.to_s.squish.truncate(60)) %></span></h2>
+<div class="po-two">
+  <div class="po-panel">
+    <h3><%= t("vendor_management.po_page.schedule") %></h3>
+    <% if installments.any? %>
+      <div class="po-scroll">
+        <table class="po-table">
+          <thead>
+            <tr>
+              <th><%= t("vendor_management.po_ai.col_description") %></th>
+              <th class="r">%</th>
+              <th class="r"><%= t("vendor_management.po_ai.col_amount") %> (<%= po.currency %>)</th>
+              <th><%= t("vendor_management.po_ai.col_due_on") %></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% installments.each do |row| %>
+              <%
+                amount = row.amount.to_f
+                if unallocated >= amount - 0.01
+                  state = :paid
+                  unallocated -= amount
+                elsif unallocated.positive?
+                  state = :partial
+                  unallocated = 0
+                else
+                  state = row.due_on && row.due_on < Date.current ? :overdue : :upcoming
+                end
+              %>
+              <tr>
+                <td><%= row.description %></td>
+                <td class="r"><%= row.percent ? row.percent.to_f.round(2) : "" %></td>
+                <td class="r"><%= money.call(amount) %></td>
+                <td class="nw"><%= row.due_on&.strftime("%d-%b-%Y") %></td>
+                <td class="r">
+                  <div class="po-state">
+                  <% pill = { paid: "good", partial: "warn", overdue: "bad", upcoming: "" }[state] %>
+                  <span class="po-pill <%= pill %>"><%= t("vendor_management.po_page.state_#{state}") %></span>
+                  <% if can_edit? && state != :paid %>
+                    <button type="button" class="po-link-btn"
+                            data-po-record data-amount="<%= amount %>" data-description="<%= row.description %>" data-due="<%= row.due_on&.iso8601 %>"><%= t("vendor_management.po_page.record_payment") %></button>
+                  <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+            <tr class="sum">
+              <td><%= t("vendor_management.po_page.total") %></td>
+              <td class="r"><%= installments.sum { |r| r.percent.to_f }.round(2).then { |p| p.zero? ? "" : p } %></td>
+              <td class="r"><%= money.call(installments.sum { |r| r.amount.to_f }) %></td>
+              <td></td><td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="po-empty"><%= t("vendor_management.po_page.no_schedule") %></div>
+    <% end %>
+  </div>
+
+  <div class="po-panel">
+    <h3><%= t("vendor_management.purchase_orders.payments_title") %></h3>
+    <div class="po-scroll">
+      <table class="po-table">
+        <thead>
+          <tr>
+            <th><%= t("vendor_management.payments.date") %></th>
+            <th><%= t("vendor_management.payments.invoice_no") %></th>
+            <th class="r"><%= t("vendor_management.payments.amount") %></th>
+            <th><%= t("vendor_management.payments.description") %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% po.po_payments.each do |payment| %>
+            <tr>
+              <td class="nw"><%= payment.paid_on&.strftime("%d-%b-%Y") %></td>
+              <td><%= payment.invoice_no %></td>
+              <td class="r"><%= money.call(payment.amount) %></td>
+              <td><%= payment.description %><% if payment.note.present? %><br><span class="po-part"><%= payment.note %></span><% end %></td>
+              <td>
+                <% if can_edit? %>
+                  <div class="po-cell">
+                    <div class="po-rowact">
+                      <%= link_to render("purchase_orders/icon", name: :edit), projects_edit_vendor_management_po_payment_path(@project, payment), title: t(:button_edit), "aria-label": t(:button_edit) %>
+                      <button type="button" class="po-ib danger" data-po-confirm-open title="<%= t(:button_delete) %>" aria-label="<%= t(:button_delete) %>"><%= render("purchase_orders/icon", name: :delete) %></button>
+                    </div>
+                    <div class="po-confirm" role="alert">
+                      <%= t("vendor_management.po_page.delete_payment_q") %>
+                      <%= button_to t(:button_delete), projects_vendor_management_po_payment_destroy_path(@project, payment), method: :delete, class: "go", form: { data: { turbo: false } } %>
+                      <button type="button" data-po-confirm-cancel><%= t("vendor_management.po_page.keep") %></button>
+                    </div>
+                  </div>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+          <% if po.po_payments.empty? %>
+            <tr><td colspan="5" class="po-empty"><%= t("vendor_management.payments.no_payments") %></td></tr>
+          <% else %>
+            <tr class="sum"><td colspan="2"><%= t("vendor_management.purchase_orders.total_paid") %></td><td class="r"><%= money.call(po.total_paid) %></td><td colspan="2"></td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if can_edit? %>
+      <details id="po-record-payment" class="po-pad" style="border-top: 1px solid var(--po-soft);">
+        <summary style="cursor:pointer; font-weight:600;"><%= t("vendor_management.po_page.record_payment") %></summary>
+        <%= form_with url: projects_vendor_management_po_payments_path(@project, po), method: :post, scope: "po_payment", local: true, data: { turbo: false } do |f| %>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; align-items: end;">
+            <div><label class="form--label" for="po_payment_paid_on"><%= t("vendor_management.payments.date") %></label><br><%= f.date_field :paid_on, style: "width:100%" %></div>
+            <div><label class="form--label" for="po_payment_invoice_no"><%= t("vendor_management.payments.invoice_no") %></label><br><%= f.text_field :invoice_no, style: "width:100%" %></div>
+            <div><label class="form--label" for="po_payment_amount"><%= t("vendor_management.payments.amount") %></label><br><%= f.number_field :amount, step: "0.01", style: "width:100%" %></div>
+            <div><label class="form--label" for="po_payment_description"><%= t("vendor_management.payments.description") %></label><br><%= f.text_field :description, style: "width:100%" %></div>
+            <div><label class="form--label" for="po_payment_note"><%= t("vendor_management.payments.note") %></label><br><%= f.text_field :note, style: "width:100%" %></div>
+            <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary)) { t("vendor_management.payments.add") } %>
+          </div>
+        <% end %>
+      </details>
+    <% end %>
+  </div>
+</div>

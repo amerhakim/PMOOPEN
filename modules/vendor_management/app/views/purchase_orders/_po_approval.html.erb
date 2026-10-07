@@ -1,0 +1,44 @@
+<% po = @purchase_order %>
+<h2 class="po-h"><%= t("vendor_management.purchase_orders.approval_title") %>
+  <span class="po-h-meta"><%= t("vendor_management.po_page.approval_meta") %></span>
+</h2>
+
+<% steps = po.po_approval_steps.order(:sequence).to_a %>
+<% current = po.next_pending_step %>
+<% if steps.any? %>
+  <div class="po-steps">
+    <% steps.each do |step| %>
+      <% approved = step.status == "approved" %>
+      <div class="po-step">
+        <span class="po-dot <%= approved ? "ok" : (step == current ? "now" : "") %>"><%= approved ? raw("&#10003;") : step.sequence %></span>
+        <div>
+          <b><%= step.approver_title %></b>
+          <span class="po-s">
+            <% if approved %><%= step.approver_name %><% elsif step.status == "rejected" %><%= t("vendor_management.po_page.rejected") %><% elsif step == current %><%= t("vendor_management.po_page.waiting") %><% else %><%= t("vendor_management.po_page.pending") %><% end %>
+          </span>
+          <% if can_manage_approvals? && step == current %>
+            <div>
+              <%= form_with url: projects_approve_vendor_management_po_approval_step_path(@project, step), method: :patch, local: true, data: { turbo: false } do %>
+                <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary, size: :small)) { t("vendor_management.purchase_orders.approve") } %>
+              <% end %>
+              <%= form_with url: projects_reject_vendor_management_po_approval_step_path(@project, step), method: :patch, local: true, data: { turbo: false } do %>
+                <%= render(Primer::Beta::Button.new(type: :submit, size: :small, classes: "po-neutral", data: { confirm: t("text_are_you_sure") })) { t("vendor_management.purchase_orders.reject") } %>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% elsif po.status == "draft" %>
+  <div class="po-panel">
+    <div class="po-pad" style="display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; justify-content:space-between;">
+      <span style="color: var(--po-muted);"><%= t("vendor_management.po_page.not_submitted") %></span>
+      <% if can_edit? %>
+        <%= form_with url: projects_submit_vendor_management_purchase_order_for_approval_path(@project, po), method: :post, local: true, data: { turbo: false } do %>
+          <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary)) { t("vendor_management.purchase_orders.submit_for_approval") } %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

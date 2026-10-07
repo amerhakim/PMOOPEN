@@ -1,0 +1,86 @@
+<% html_title t("vendor_management.po_form.title_edit") %>
+
+<%= render "purchase_orders/po_page_styles" %>
+
+<% details_open = @purchase_order.errors.any? %>
+
+<div class="po-page po-surface">
+  <%= render "purchase_orders/po_header" %>
+  <%= render "purchase_orders/po_summary" %>
+  <%= render "purchase_orders/po_delivery_cards" %>
+  <%= render "purchase_orders/po_payments_section" %>
+
+  <div class="po-sec" style="margin-top: 24px;">
+    <div class="po-sec-h">
+      <button type="button" class="po-sec-toggle" data-po-toggle="po-order-details" aria-expanded="<%= details_open %>">
+        <span class="po-chev" aria-hidden="true">&#9656;</span>
+        <span class="po-sec-name"><%= t("vendor_management.po_page.order_details") %></span>
+        <span class="po-sec-count"><%= [@purchase_order.po_number, @purchase_order.vendor&.name, @purchase_order.payment_terms.to_s.squish.truncate(40).presence].compact.join(" · ") %></span>
+      </button>
+    </div>
+    <div class="po-sec-b" id="po-order-details" <%= "hidden" unless details_open %>>
+      <%= render "form", url: projects_vendor_management_purchase_order_path(@project, @purchase_order), client_inline: false %>
+    </div>
+  </div>
+
+  <%= render "purchase_orders/po_approval" if @purchase_order.approval_in_use? %>
+
+  <%= render "purchase_orders/po_line_items" %>
+  <%= render "purchase_orders/po_delivery_notes" %>
+
+  <h2 class="po-h"><%= t("vendor_management.po_page.client_section") %></h2>
+  <%= render "purchase_orders/po_client" %>
+</div>
+
+<%= javascript_tag nonce: true do %>
+  (function () {
+    var root = document.querySelector(".po-page.po-surface");
+    if (!root) return;
+    root.addEventListener("click", function (e) {
+      var toggle = e.target.closest("[data-po-toggle]");
+      if (toggle) {
+        var body = document.getElementById(toggle.getAttribute("data-po-toggle"));
+        var open = toggle.getAttribute("aria-expanded") === "true";
+        toggle.setAttribute("aria-expanded", open ? "false" : "true");
+        if (body) body.hidden = open;
+        return;
+      }
+      var all = e.target.closest("[data-po-all]");
+      if (all) {
+        var expand = all.getAttribute("data-po-all") === "expand";
+        document.querySelectorAll("[data-po-toggle^='po-sec-']").forEach(function (t) {
+          t.setAttribute("aria-expanded", expand ? "true" : "false");
+          var b = document.getElementById(t.getAttribute("data-po-toggle"));
+          if (b) b.hidden = !expand;
+        });
+        return;
+      }
+      var ask = e.target.closest("[data-po-confirm-open]");
+      if (ask) { ask.closest(".po-cell").classList.add("confirming"); return; }
+      var keep = e.target.closest("[data-po-confirm-cancel]");
+      if (keep) { keep.closest(".po-cell").classList.remove("confirming"); return; }
+      var rec = e.target.closest("[data-po-record]");
+      if (rec) {
+        var box = document.getElementById("po-record-payment");
+        if (box) {
+          box.open = true;
+          var set = function (id, v) { var el = document.getElementById(id); if (el && v) el.value = v; };
+          set("po_payment_amount", rec.getAttribute("data-amount"));
+          set("po_payment_description", rec.getAttribute("data-description"));
+          set("po_payment_paid_on", rec.getAttribute("data-due"));
+          box.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    });
+    document.querySelectorAll("[data-po-dropzone]").forEach(function (zone) {
+      var input = zone.querySelector("input[type=file]");
+      var form = zone.closest("form");
+      input.addEventListener("change", function () { if (input.files.length) form.submit(); });
+      ["dragenter", "dragover"].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add("over"); }); });
+      ["dragleave", "drop"].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove("over"); }); });
+      zone.addEventListener("drop", function (e) {
+        if (e.dataTransfer && e.dataTransfer.files.length) { input.files = e.dataTransfer.files; form.submit(); }
+      });
+    });
+  })();
+<% end %>

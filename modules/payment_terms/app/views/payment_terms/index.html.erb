@@ -1,0 +1,181 @@
+<% html_title t("payment_terms.index.title") %>
+
+<style>
+  /* One shared "eyebrow" label style -- every small caption on this page
+     (KPI labels, filter labels, payment counts) uses this exact rule
+     instead of each picking its own ad-hoc size/weight. */
+  .payment-terms-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #57606a; }
+
+  .payment-terms-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 12px 0 20px; }
+  .payment-terms-kpi-card { border: 1px solid #d0d7de; border-radius: 6px; padding: 14px 16px; background: #fff; }
+  .payment-terms-kpi-label { margin-bottom: 6px; }
+  .payment-terms-kpi-value { font-size: 22px; font-weight: 700; line-height: 1.25; color: #17242f; }
+  .payment-terms-kpi-collected { color: #1e6b45; }
+  .payment-terms-kpi-invoiced { color: #9a6b1a; }
+  .payment-terms-kpi-pending { color: #57606a; }
+
+  .payment-terms-filter-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 20px; padding: 12px; border: 1px solid #d0d7de; border-radius: 6px; background: #f6f8fa; }
+  .payment-terms-filter-field label { display: block; margin-bottom: 5px; }
+  .payment-terms-filter-field input, .payment-terms-filter-field select { min-height: 32px; font-size: 14px; }
+
+  .payment-terms-card { border: 1px solid #d0d7de; border-radius: 6px; margin-bottom: 12px; background: #fff; }
+  .payment-terms-card-header { display: flex; align-items: center; gap: 8px; padding: 4px 8px; }
+  .payment-terms-card-toggle { flex: 1 1 auto; display: flex; align-items: center; gap: 12px; background: none; border: none; padding: 10px 4px; cursor: pointer; text-align: left; min-width: 0; }
+  .payment-terms-chevron { transition: transform 0.15s ease; color: #57606a; flex: 0 0 auto; }
+  .payment-terms-card-toggle[aria-expanded="true"] .payment-terms-chevron { transform: rotate(90deg); }
+  .payment-terms-line-name { font-size: 15px; font-weight: 600; color: #17242f; }
+  .payment-terms-line-count { font-size: 12px; font-weight: 400; color: #57606a; white-space: nowrap; }
+  .payment-terms-progress { position: relative; flex: 1 1 160px; max-width: 220px; min-width: 100px; height: 10px; border-radius: 5px; background: #eaeef2; overflow: hidden; }
+  .payment-terms-progress-collected, .payment-terms-progress-invoiced { position: absolute; top: 0; height: 100%; }
+  .payment-terms-progress-collected { left: 0; background: #1e6b45; }
+  .payment-terms-progress-invoiced { background: #9a6b1a; }
+  .payment-terms-line-total { margin-left: auto; font-size: 14px; font-weight: 700; color: #17242f; white-space: nowrap; flex: 0 0 auto; }
+  .payment-terms-card-actions { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+  .payment-terms-card-actions-divider { width: 1px; height: 20px; background: #d0d7de; margin: 0 4px; }
+  .payment-terms-card-body { border-top: 1px solid #d0d7de; padding: 8px; }
+  .payment-terms-card-body table td, .payment-terms-card-body table th { font-size: 13px; }
+  .payment-terms-card-body table td.value { font-weight: 700; text-align: right; white-space: nowrap; }
+
+  .payment-terms-cancelled-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #eaeef2; color: #57606a; font-size: 11px; font-weight: 600; vertical-align: middle; }
+  .payment-terms-status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
+  .payment-terms-info-icon { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: #d0d7de; color: #fff; font-size: 10px; font-style: italic; font-weight: 700; cursor: help; }
+  .payment-terms-description-text { display: inline-block; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; font-size: 13px; }
+</style>
+
+<h2><%= t("payment_terms.index.title") %></h2>
+
+<% @kpis.each do |currency, kpi| %>
+  <% if @kpis.size > 1 %><div class="payment-terms-eyebrow" style="margin-top: 12px;"><%= currency %></div><% end %>
+  <%= render partial: "payment_terms/kpi_summary", locals: { kpi:, currency: } %>
+<% end %>
+
+<div class="payment-terms-filter-bar">
+  <div class="payment-terms-filter-field" style="flex: 1 1 220px;">
+    <label class="payment-terms-eyebrow" for="pt-filter-search"><%= t("payment_terms.filters.search") %></label>
+    <%= text_field_tag "pt-filter-search", nil, id: "pt-filter-search", class: "form--text-field", style: "width:100%;" %>
+  </div>
+  <div class="payment-terms-filter-field">
+    <label class="payment-terms-eyebrow" for="pt-filter-expected-date"><%= t("payment_terms.filters.expected_date") %></label>
+    <%= date_field_tag "pt-filter-expected-date", nil, id: "pt-filter-expected-date", class: "form--text-field" %>
+  </div>
+  <div class="payment-terms-filter-field">
+    <label class="payment-terms-eyebrow" for="pt-filter-actual-date"><%= t("payment_terms.filters.actual_date") %></label>
+    <%= date_field_tag "pt-filter-actual-date", nil, id: "pt-filter-actual-date", class: "form--text-field" %>
+  </div>
+  <div class="payment-terms-filter-field">
+    <label class="payment-terms-eyebrow" for="pt-filter-issued"><%= t("payment_terms.filters.invoiced") %></label>
+    <%= select_tag "pt-filter-issued", options_for_select([[t("payment_terms.filters.all"), ""], [t(:general_text_yes), "true"], [t(:general_text_no), "false"]]), id: "pt-filter-issued", class: "form--select" %>
+  </div>
+  <div class="payment-terms-filter-field">
+    <label class="payment-terms-eyebrow" for="pt-filter-collected"><%= t("payment_terms.filters.collected") %></label>
+    <%= select_tag "pt-filter-collected", options_for_select([[t("payment_terms.filters.all"), ""], [t(:general_text_yes), "true"], [t(:general_text_no), "false"]]), id: "pt-filter-collected", class: "form--select" %>
+  </div>
+  <%= render(Primer::Beta::Button.new(id: "pt-filter-clear", size: :small, type: :button)) { t("payment_terms.filters.clear") } %>
+</div>
+
+<% if @can_edit %>
+  <p>
+    <%= render(Primer::Beta::Button.new(scheme: :primary, tag: :a, href: projects_new_payment_terms_line_path(@project))) do |btn| %>
+      <% btn.with_leading_visual_icon(icon: :plus) %>
+      <%= t("payment_terms.index.new_line") %>
+    <% end %>
+  </p>
+<% end %>
+
+<% if @contract_lines.empty? %>
+  <p><%= t("payment_terms.index.no_lines") %></p>
+<% else %>
+  <% @contract_lines.each_with_index do |line, index| %>
+    <%= render partial: "payment_terms/contract_line_card", locals: { line: line, expanded: index.zero? } %>
+  <% end %>
+<% end %>
+
+<%= nonced_javascript_tag do %>
+(function () {
+  "use strict";
+
+  var searchInput = document.getElementById("pt-filter-search");
+  var expectedInput = document.getElementById("pt-filter-expected-date");
+  var actualInput = document.getElementById("pt-filter-actual-date");
+  var issuedSelect = document.getElementById("pt-filter-issued");
+  var collectedSelect = document.getElementById("pt-filter-collected");
+  var clearButton = document.getElementById("pt-filter-clear");
+  var cards = Array.prototype.slice.call(document.querySelectorAll("[data-payment-terms-card]"));
+
+  cards.forEach(function (card) {
+    var countEl = card.querySelector("[data-payment-terms-count]");
+    if (countEl) countEl.dataset.defaultLabel = countEl.textContent.trim();
+  });
+
+  function filtersActive() {
+    return !!(searchInput.value || expectedInput.value || actualInput.value || issuedSelect.value || collectedSelect.value);
+  }
+
+  function rowMatches(row) {
+    var text = row.textContent.toLowerCase();
+    if (searchInput.value && text.indexOf(searchInput.value.toLowerCase()) === -1) return false;
+
+    if (expectedInput.value && row.dataset.expectedIso !== expectedInput.value) return false;
+    if (actualInput.value && row.dataset.invoiceIso !== actualInput.value) return false;
+
+    if (issuedSelect.value && row.dataset.invoiced !== issuedSelect.value) return false;
+    if (collectedSelect.value && row.dataset.collected !== collectedSelect.value) return false;
+
+    return true;
+  }
+
+  function applyFilters() {
+    var active = filtersActive();
+    clearButton.hidden = !active;
+
+    cards.forEach(function (card) {
+      var body = card.querySelector("[data-payment-terms-body]");
+      var rows = Array.prototype.slice.call(body.querySelectorAll("tbody > tr")).filter(function (row) {
+        return !row.classList.contains("generic-table--empty-row") && !row.classList.contains("payment-terms-empty-filtered-row");
+      });
+      var emptyRow = body.querySelector(".payment-terms-empty-filtered-row");
+      var visible = 0;
+
+      rows.forEach(function (row) {
+        var show = !active || rowMatches(row);
+        row.hidden = !show;
+        if (show) visible += 1;
+      });
+
+      if (emptyRow) emptyRow.hidden = !(active && rows.length > 0 && visible === 0);
+
+      var countEl = card.querySelector("[data-payment-terms-count]");
+      if (countEl) {
+        countEl.textContent = active ? (visible + " of " + rows.length + " shown") : countEl.dataset.defaultLabel;
+      }
+    });
+  }
+
+  [searchInput, expectedInput, actualInput].forEach(function (el) {
+    el.addEventListener("input", applyFilters);
+  });
+  [issuedSelect, collectedSelect].forEach(function (el) {
+    el.addEventListener("change", applyFilters);
+  });
+  clearButton.addEventListener("click", function () {
+    searchInput.value = "";
+    expectedInput.value = "";
+    actualInput.value = "";
+    issuedSelect.value = "";
+    collectedSelect.value = "";
+    applyFilters();
+  });
+  applyFilters();
+
+  document.querySelectorAll("[data-payment-terms-toggle]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var card = btn.closest("[data-payment-terms-card]");
+      var body = card.querySelector("[data-payment-terms-body]");
+      var expanded = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", expanded ? "false" : "true");
+      body.hidden = expanded;
+    });
+  });
+})();
+<% end %>
+

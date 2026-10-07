@@ -1,0 +1,62 @@
+<%= component_wrapper do %>
+  <%= form_with(url: helpers.projects_bulk_destroy_vendor_management_purchase_orders_path(project), method: :post, data: { turbo: false, controller: "checkable" }) do %>
+    <% if can_edit %>
+      <div class="generic-table--action-bar" style="margin-bottom: 8px;">
+        <%= render(Primer::Beta::Button.new(type: :submit, scheme: :primary, size: :small, data: { confirm: t("vendor_management.purchase_orders.delete_selected_confirm") })) { t("vendor_management.purchase_orders.delete_selected") } %>
+      </div>
+    <% end %>
+    <div class="generic-table--container <%= container_class %>" data-test-selector="<%= test_selector %>" id="<%= container_id %>">
+      <div class="generic-table--results-container">
+        <%= render(Primer::BaseComponent.new(**@system_arguments)) do %>
+          <colgroup>
+            <col style="width: 2em;">
+            <% headers.each do |_name, _options| %>
+              <col>
+            <% end %>
+            <col data-highlight="false">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>
+                <%= check_box_tag "select_all_purchase_orders", "1", false, id: "select-all-purchase-orders", data: { action: "click->checkable#toggleAll" }, "aria-label": t("vendor_management.purchase_orders.select_all") %>
+              </th>
+              <% headers.each do |name, options| %>
+                <% if sortable_column?(name) %>
+                  <%= helpers.sort_header_tag(name, **options) %>
+                <% else %>
+                  <th aria-label="<%= options[:caption] %>">
+                    <div class="generic-table--sort-header-outer">
+                      <div class="generic-table--sort-header">
+                        <span>
+                          <%= options[:caption] %>
+                        </span>
+                      </div>
+                    </div>
+                  </th>
+                <% end %>
+              <% end %>
+              <th>
+                <div class="generic-table--sort-header-outer">
+                  <div class="generic-table--sort-header">
+                    <span><%= t("vendor_management.purchase_orders.actions_column") %></span>
+                  </div>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if rows.empty? %>
+            <tr class="generic-table--empty-row">
+              <td colspan="<%= headers.length + 2 %>"><%= empty_row_message %></td>
+            </tr>
+            <% end %>
+            <%= render_collection rows %>
+          </tbody>
+        <% end %>
+      </div>
+    </div>
+    <% if paginated? %>
+      <%= helpers.pagination_links_full rows %>
+    <% end %>
+  <% end %>
+<% end %>

@@ -1,0 +1,211 @@
+<style>
+  .payment-form-section { background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+  .payment-form-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #57606a; }
+  .payment-form-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+  .payment-form-row .payment-form-field, .payment-form-conditional .payment-form-field { flex: 1 1 220px; }
+  .payment-form-field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .payment-form-hint { margin: 4px 0 0; font-size: 12px; color: #57606a; }
+
+  .payment-form-amount-row { display: flex; align-items: flex-end; gap: 10px; }
+  .payment-form-amount-row .payment-form-field { flex: 1 1 240px; }
+  .payment-form-amount-row .payment-form-percent-field { flex: 0 0 140px; }
+  .payment-form-sync-icon { flex: 0 0 auto; padding-bottom: 9px; color: #9aa3ad; }
+  .payment-form-amount-prefix { display: flex; align-items: center; gap: 6px; }
+  .payment-form-amount-prefix span { font-size: 13px; color: #57606a; }
+
+  .payment-form-sync-note { display: flex; align-items: center; gap: 6px; background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #57606a; }
+
+  .payment-form-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+  .payment-form-toggle-title { font-size: 14px; font-weight: 600; }
+  .payment-form-toggle-desc { font-size: 12px; color: #57606a; }
+  .payment-form-toggle-divider { border-top: 1px solid #eaeef2; margin-top: 8px; padding-top: 12px; }
+
+  .payment-form-switch { appearance: none; -webkit-appearance: none; width: 42px; height: 24px; border-radius: 12px; background: #d0d7de; position: relative; cursor: pointer; flex: 0 0 auto; margin: 0; transition: background 0.15s ease; }
+  .payment-form-switch::before { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.3); transition: left 0.15s ease; }
+  .payment-form-switch:checked { background: #1e6b45; }
+  .payment-form-switch:checked::before { left: 20px; }
+  .payment-form-switch:focus-visible { outline: 2px solid var(--accent-color, #1A67A3); outline-offset: 2px; }
+
+  .payment-form-conditional { display: flex; gap: 16px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid #eaeef2; margin-top: 8px; }
+
+  .payment-form-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+  #payment-value-input, #payment-percent-input { width: 100%; }
+</style>
+
+<%= form_with model: @payment, url: url, scope: "payment", local: true, data: { turbo: false } do |f| %>
+  <% if @payment.errors.any? %>
+    <div class="flash error"><%= @payment.errors.full_messages.join(", ") %></div>
+  <% end %>
+
+  <%= f.hidden_field :entered_field, id: "payment-entered-field" %>
+
+  <div class="payment-form-section">
+    <div class="payment-form-eyebrow"><%= t("payment_terms.payment_form.section_payment") %></div>
+
+    <div class="payment-form-field">
+      <label for="payment_description"><%= t("payment_terms.payment_form.description_label") %></label>
+      <%= f.text_area :description, rows: 2 %>
+    </div>
+
+    <div>
+      <div class="payment-form-amount-row">
+        <div class="payment-form-field">
+          <label for="payment_value"><%= t("payment_terms.payment_form.value_label") %></label>
+          <div class="payment-form-amount-prefix">
+            <span><%= @contract_line.currency %></span>
+            <%= f.text_field :value, id: "payment-value-input" %>
+          </div>
+        </div>
+        <div class="payment-form-sync-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13M17 3l3 4-3 4"/><path d="M17 17H4M7 21l-3-4 3-4"/></svg>
+        </div>
+        <div class="payment-form-field payment-form-percent-field">
+          <label for="payment_percent"><%= t("payment_terms.payment_form.percent_label") %></label>
+          <%= f.text_field :percent, id: "payment-percent-input" %>
+        </div>
+      </div>
+      <p class="payment-form-hint"><%= t("payment_terms.payment_form.value_hint") %></p>
+    </div>
+  </div>
+
+  <div class="payment-form-section">
+    <div class="payment-form-eyebrow"><%= t("payment_terms.payment_form.section_schedule") %></div>
+
+    <div class="payment-form-row">
+      <div class="payment-form-field">
+        <label for="payment_milestone_id"><%= t("payment_terms.payment_form.milestone_label") %></label>
+        <%= f.select :milestone_id,
+                      options_from_collection_for_select(@milestones, :id, :subject, @payment.milestone_id),
+                      { include_blank: t("payment_terms.payment_form.no_milestone") },
+                      id: "payment-milestone-input" %>
+      </div>
+      <div class="payment-form-field">
+        <label for="payment_expected_invoice_date"><%= t("payment_terms.payment_form.expected_invoice_date_label") %></label>
+        <%= f.date_field :expected_invoice_date, disabled: @payment.milestone_id.present?, id: "payment-expected-date-input" %>
+      </div>
+    </div>
+
+    <div class="payment-form-sync-note" id="payment-milestone-sync-note" <%= "hidden" unless @payment.milestone_id.present? %>>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span><%= t("payment_terms.payment_form.expected_invoice_date_hint") %></span>
+    </div>
+  </div>
+
+  <div class="payment-form-section">
+    <div class="payment-form-eyebrow"><%= t("payment_terms.payment_form.section_invoice_status") %></div>
+
+    <label class="payment-form-toggle-row" for="payment_invoiced">
+      <span>
+        <span class="payment-form-toggle-title"><%= t("payment_terms.payment_form.invoiced_label") %></span><br>
+        <span class="payment-form-toggle-desc"><%= t("payment_terms.payment_form.invoiced_hint") %></span>
+      </span>
+      <%= f.check_box :invoiced, class: "payment-form-switch", id: "payment-invoiced-input" %>
+    </label>
+
+    <div class="payment-form-conditional" id="payment-invoice-fields" <%= "hidden" unless @payment.invoiced? %>>
+      <div class="payment-form-field">
+        <label for="payment_invoice_number"><%= t("payment_terms.payment_form.invoice_number_label") %></label>
+        <%= f.text_field :invoice_number %>
+      </div>
+      <div class="payment-form-field">
+        <label for="payment_invoice_date"><%= t("payment_terms.payment_form.invoice_date_label") %></label>
+        <%= f.date_field :invoice_date %>
+      </div>
+    </div>
+
+    <label class="payment-form-toggle-row payment-form-toggle-divider" for="payment_collected">
+      <span>
+        <span class="payment-form-toggle-title"><%= t("payment_terms.payment_form.collected_label") %></span><br>
+        <span class="payment-form-toggle-desc"><%= t("payment_terms.payment_form.collected_hint") %></span>
+      </span>
+      <%= f.check_box :collected, class: "payment-form-switch", id: "payment-collected-input" %>
+    </label>
+
+    <div class="payment-form-conditional" id="payment-collection-fields">
+      <div class="payment-form-field">
+        <label for="payment_expected_collection_date"><%= t("payment_terms.payment_form.expected_collection_date_label") %></label>
+        <%= f.date_field :expected_collection_date %>
+      </div>
+      <div class="payment-form-field" id="payment-actual-collection-field" <%= "hidden" unless @payment.collected? %>>
+        <label for="payment_actual_collection_date"><%= t("payment_terms.payment_form.actual_collection_date_label") %></label>
+        <%= f.date_field :actual_collection_date %>
+      </div>
+    </div>
+
+    <label class="payment-form-toggle-row payment-form-toggle-divider" for="payment-cancelled-input">
+      <span>
+        <span class="payment-form-toggle-title"><%= t("payment_terms.payment_form.cancelled_label") %></span><br>
+        <span class="payment-form-toggle-desc"><%= t("payment_terms.payment_form.cancelled_hint") %></span>
+      </span>
+      <%= f.check_box :cancelled, class: "payment-form-switch", id: "payment-cancelled-input" %>
+    </label>
+  </div>
+
+  <div class="payment-form-section">
+    <div class="payment-form-eyebrow"><%= t("payment_terms.payment_form.section_notes") %></div>
+    <%= f.text_area :comments, rows: 3 %>
+  </div>
+
+  <div class="payment-form-actions">
+    <%= render(Primer::Beta::Button.new(tag: :a, href: projects_payment_terms_path(@project))) { t("payment_terms.payment_form.cancel") } %>
+    <%= render(Primer::Beta::Button.new(scheme: :primary, type: :submit)) { t("payment_terms.payment_form.submit") } %>
+  </div>
+
+  <%= nonced_javascript_tag do %>
+  (function () {
+    "use strict";
+
+    var componentValue = <%= raw((@contract_line.component_value || 0).to_json) %>;
+    var valueInput = document.getElementById("payment-value-input");
+    var percentInput = document.getElementById("payment-percent-input");
+    var enteredField = document.getElementById("payment-entered-field");
+
+    if (componentValue) {
+      valueInput.addEventListener("input", function () {
+        enteredField.value = "value";
+        var value = parseFloat(valueInput.value);
+        if (isNaN(value)) return;
+        percentInput.value = Math.round((value / componentValue * 100) * 100) / 100;
+      });
+
+      percentInput.addEventListener("input", function () {
+        enteredField.value = "percent";
+        var percent = parseFloat(percentInput.value);
+        if (isNaN(percent)) return;
+        valueInput.value = Math.round((componentValue * percent / 100) * 100) / 100;
+      });
+    }
+
+    var milestoneSelect = document.getElementById("payment-milestone-input");
+    var expectedDateInput = document.getElementById("payment-expected-date-input");
+    var syncNote = document.getElementById("payment-milestone-sync-note");
+
+    milestoneSelect.addEventListener("change", function () {
+      var linked = milestoneSelect.value !== "";
+      expectedDateInput.disabled = linked;
+      syncNote.hidden = !linked;
+    });
+
+    var invoicedCheckbox = document.getElementById("payment-invoiced-input");
+    var invoiceFields = document.getElementById("payment-invoice-fields");
+
+    invoicedCheckbox.addEventListener("change", function () {
+      invoiceFields.hidden = !invoicedCheckbox.checked;
+    });
+
+    var collectedCheckbox = document.getElementById("payment-collected-input");
+    var actualField = document.getElementById("payment-actual-collection-field");
+    var actualInput = document.getElementById("payment_actual_collection_date");
+
+    collectedCheckbox.addEventListener("change", function () {
+      actualField.hidden = !collectedCheckbox.checked;
+      if (collectedCheckbox.checked && !actualInput.value) {
+        actualInput.value = new Date().toISOString().slice(0, 10);
+      }
+    });
+  })();
+  <% end %>
+<% end %>
+
+

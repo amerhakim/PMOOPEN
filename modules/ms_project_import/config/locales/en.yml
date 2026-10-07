@@ -1,0 +1,19 @@
+---
+en:
+  label_ms_project_import: "MS Project import"
+  project_module_ms_project_import: "MS Project import"
+  permission_import_ms_project: "Import MS Project files"
+
+  ms_project_import:
+    new:
+      description: "Upload an MS Project file (.mpp, .mpx or MSPDI .xml). Its task hierarchy, dates and dependencies will be created as work packages in this project."
+      file_label: "MS Project file"
+      submit: "Upload and import"
+    show:
+      in_progress: "Importing your file, this page will refresh automatically..."
+      view_work_packages: "View work packages"
+      try_again: "Try again"
+    success: "Import finished: %{tasks} work packages and %{relations} dependencies created."
+    errors:
+      no_file_selected: "Please select a file to upload."
+      generic: "The import failed."

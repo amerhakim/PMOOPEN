@@ -1,0 +1,32 @@
+<%# notes: delivery notes (without data); show_po: also show the PO each file belongs to %>
+<% if notes.empty? %>
+  <div class="po-empty"><%= t("vendor_management.delivery_notes.none_yet") %></div>
+<% else %>
+  <ul class="po-files">
+    <% notes.each do |note| %>
+      <li class="po-file">
+        <span class="po-fi"><%= note.extension.delete(".").upcase.first(4) %></span>
+        <div class="po-fmeta">
+          <%= link_to note.filename, projects_vendor_management_delivery_note_download_path(@project, note) %>
+          <span>
+            <% if show_po %><%= note.purchase_order ? note.purchase_order.po_number : t("vendor_management.delivery_notes.not_linked") %> · <% end %>
+            <%= note.uploaded_by&.name %> · <%= l(note.created_at.to_date, format: :long) %> · <%= number_to_human_size(note.byte_size) %>
+          </span>
+        </div>
+        <% if can_edit? %>
+          <div class="po-cell">
+            <div class="po-rowact">
+              <%= link_to render("purchase_orders/icon", name: :download), projects_vendor_management_delivery_note_download_path(@project, note), title: t("vendor_management.delivery_notes.download"), "aria-label": t("vendor_management.delivery_notes.download") %>
+              <button type="button" class="po-ib danger" data-po-confirm-open title="<%= t(:button_delete) %>" aria-label="<%= t(:button_delete) %>"><%= render("purchase_orders/icon", name: :delete) %></button>
+            </div>
+            <div class="po-confirm" role="alert">
+              <%= t("vendor_management.delivery_notes.delete_q") %>
+              <%= button_to t(:button_delete), projects_vendor_management_delivery_note_destroy_path(@project, note, return_to: (show_po ? nil : "po")), method: :delete, class: "go", form: { data: { turbo: false } } %>
+              <button type="button" data-po-confirm-cancel><%= t("vendor_management.po_page.keep") %></button>
+            </div>
+          </div>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+<% end %>

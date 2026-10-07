@@ -1,0 +1,24 @@
+---
+en:
+  label_custom_branding: "Custom Branding"
+
+  custom_branding:
+    description: "Upload your company logo and choose interface colors. Changes apply immediately across the whole application, for every user."
+    logo_legend: "Logo"
+    logo_label: "Logo file"
+    logo_instructions: "A logo on a transparent or dark background works best. Recommended size: 460x60px."
+    remove_logo: "Remove current logo"
+    colors_legend: "Interface colors"
+    colors_description: "Pick a color or type its hex code (e.g. #1A67A3)."
+    colors:
+      header_bg_color: "Header background"
+      main_menu_bg_color: "Main menu background"
+      main_menu_bg_selected_background: "Main menu selected item background"
+      accent_color: "Accent color (links, highlights)"
+      primary_button_color: "Primary button color"
+    instructions:
+      header_bg_color: "Background color of the top header bar."
+      main_menu_bg_color: "Background color of the left sidebar menu."
+      main_menu_bg_selected_background: "Background color of the currently selected sidebar item."
+      accent_color: "Used for links and highlighted elements throughout the app."
+      primary_button_color: "Background color of primary action buttons (e.g. \"Save\", \"Create\")."

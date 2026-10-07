@@ -1,0 +1,48 @@
+<%
+  payments = line.payments.to_a
+  live_payments = payments.reject(&:cancelled?)
+  collected_total = live_payments.select(&:collected?).sum { |p| p.value.to_f }
+  invoiced_total = live_payments.select(&:invoiced?).sum { |p| p.value.to_f }
+  denominator = line.component_value.to_f
+  collected_pct = denominator.positive? ? (collected_total / denominator * 100).clamp(0, 100) : 0
+  invoiced_pct = denominator.positive? ? (invoiced_total / denominator * 100).clamp(0, 100 - collected_pct) : 0
+%>
+
+<div class="payment-terms-card" data-payment-terms-card>
+  <%= form_with(url: projects_bulk_destroy_payment_terms_payments_path(@project, line), method: :post, data: { controller: "checkable" }, html: { id: "payment-terms-line-form-#{line.id}" }) do %>
+    <div class="payment-terms-card-header">
+      <button type="button" class="payment-terms-card-toggle" data-payment-terms-toggle aria-expanded="<%= expanded ? "true" : "false" %>">
+        <span class="payment-terms-chevron" aria-hidden="true">&#9656;</span>
+        <span class="payment-terms-line-name"><%= line.name %></span>
+        <span class="payment-terms-line-count payment-terms-eyebrow" data-payment-terms-count data-total="<%= payments.size %>">
+          <%= t("payment_terms.index.payments_count", count: payments.size) %>
+        </span>
+        <% if denominator.positive? %>
+          <span class="payment-terms-progress" aria-hidden="true" title="<%= collected_pct.round %>% collected, <%= invoiced_pct.round %>% invoiced">
+            <span class="payment-terms-progress-collected" style="width: <%= collected_pct %>%;"></span>
+            <span class="payment-terms-progress-invoiced" style="width: <%= invoiced_pct %>%; left: <%= collected_pct %>%;"></span>
+          </span>
+        <% end %>
+        <span class="payment-terms-line-total"><%= payment_terms_money(denominator, line.currency) %></span>
+      </button>
+
+      <% if @can_edit %>
+        <div class="payment-terms-card-actions">
+          <%= render(Primer::Beta::Button.new(scheme: :primary, size: :small, tag: :a, href: projects_new_payment_terms_payment_path(@project, line))) do |btn| %>
+            <% btn.with_leading_visual_icon(icon: :plus) %>
+            <%= t("payment_terms.index.new_payment") %>
+          <% end %>
+          <%= render(Primer::Beta::IconButton.new(icon: :trash, scheme: :danger, size: :small, type: :submit, "aria-label": t("payment_terms.index.delete_selected"), tooltip_direction: :n, data: { confirm: t("payment_terms.index.delete_selected_confirm") })) %>
+          <span class="payment-terms-card-actions-divider" aria-hidden="true"></span>
+          <%= render(Primer::Beta::IconButton.new(icon: :pencil, scheme: :invisible, size: :small, tag: :a, href: projects_edit_payment_terms_line_path(@project, line), "aria-label": t("payment_terms.index.edit_line"), tooltip_direction: :n)) %>
+          <%= render(Primer::Beta::IconButton.new(icon: :trash, scheme: :invisible, size: :small, tag: :a, href: projects_payment_terms_line_path(@project, line), "aria-label": t("payment_terms.index.delete_line"), tooltip_direction: :n, data: { turbo_method: :delete, confirm: t("text_are_you_sure") })) %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="payment-terms-card-body" data-payment-terms-body<%= " hidden".html_safe unless expanded %>>
+      <%= render(PaymentTerms::Payments::TableComponent.new(rows: payments, can_edit: @can_edit, contract_line: line)) %>
+    </div>
+  <% end %>
+</div>
+

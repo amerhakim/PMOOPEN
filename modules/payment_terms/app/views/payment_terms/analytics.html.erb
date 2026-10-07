@@ -1,0 +1,129 @@
+<% html_title t("payment_terms.analytics.title") %>
+
+<style>
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #57606a; }
+  .card { background: #fff; border: 1px solid #e3e7ee; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 2px 8px rgba(16,24,40,0.05); }
+  .kpi-card { position: relative; overflow: hidden; }
+  .kpi-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent, #2563eb); }
+  table.pt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.pt-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: #57606a; padding: 8px 10px; border-bottom: 2px solid #eaeef2; }
+  table.pt-table td { padding: 9px 10px; border-bottom: 1px solid #eaeef2; }
+  table.pt-table tr:hover td { background: #f9fafc; }
+  table.pt-table tr:last-child td { border-bottom: none; }
+  .tabs-wrap { display: inline-flex; gap: 2px; background: #eaeef2; padding: 4px; border-radius: 10px; }
+  .tab-btn { border: none; background: none; padding: 8px 16px; font-size: 13px; font-weight: 600; color: #57606a; cursor: pointer; border-radius: 7px; transition: background 0.15s ease, color 0.15s ease; }
+  .tab-btn[data-active="true"] { color: #17242f; background: #fff; box-shadow: 0 1px 2px rgba(16,24,40,0.08); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+  .chip { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #eef1f5; color: #57606a; }
+  .nav-btn { border: 1px solid #d0d7de; background: #fff; width: 26px; height: 26px; border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 700; color: #17242f; display: flex; align-items: center; justify-content: center; }
+  .nav-btn:hover { background: #f6f8fa; }
+</style>
+
+<% if @has_any_scope_data %>
+  <% main_data = @scopes.first[:data] %>
+  <div style="max-width: 1320px;">
+    <div>
+      <div style="font-size: 12px; color: #57606a; margin-bottom: 4px;"><%= t("payment_terms.index.title") %> &rsaquo; <%= t("payment_terms.analytics.title") %></div>
+      <h2 style="margin: 0 0 4px;"><%= t("payment_terms.analytics.title") %></h2>
+      <p style="margin: 0; font-size: 13px; color: #57606a;"><%= raw(t("payment_terms.analytics.subtitle", projects: main_data[:project_count], payments: main_data[:payment_count])) %></p>
+    </div>
+
+    <% if @currencies.size > 1 %>
+      <div class="tabs-wrap" style="margin: 14px 12px 0 0;">
+        <% @currencies.each do |cur| %>
+          <%= link_to cur, payment_terms_analytics_path(currency: cur), class: "tab-btn", data: { active: (cur == @analytics_currency).to_s }, style: "text-decoration: none; display: inline-block;" %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if @scopes.size > 1 %>
+      <div class="tabs-wrap" style="margin: 14px 0;">
+        <% @scopes.each_with_index do |scope, i| %>
+          <button type="button" class="tab-btn" data-scope-tab="<%= scope[:key] %>" data-active="<%= i.zero? %>"><%= scope[:label] %></button>
+        <% end %>
+      </div>
+    <% else %>
+      <div style="height: 14px;"></div>
+    <% end %>
+
+    <% @scopes.each_with_index do |scope, i| %>
+      <div data-scope-panel="<%= scope[:key] %>"<%= " hidden".html_safe unless i.zero? %>>
+        <%= render partial: "payment_terms/analytics_scope", locals: { scope:, show_pm_am_breakdown: scope[:key] == "all" } %>
+      </div>
+    <% end %>
+  </div>
+
+  <%= nonced_javascript_tag do %>
+  (function () {
+    "use strict";
+
+    document.querySelectorAll("[data-scope-tab]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var key = btn.dataset.scopeTab;
+        document.querySelectorAll("[data-scope-tab]").forEach(function (b) { b.dataset.active = String(b === btn); });
+        document.querySelectorAll("[data-scope-panel]").forEach(function (p) { p.hidden = p.dataset.scopePanel !== key; });
+      });
+    });
+
+    function shortFmt(v) {
+      if (v <= 0) return "";
+      return v >= 1000000 ? (v / 1000000).toFixed(1) + "M" : Math.round(v / 1000) + "K";
+    }
+
+    document.querySelectorAll("[data-monthly-chart]").forEach(function (chart) {
+      var dataObj = JSON.parse(chart.dataset.monthlyChart);
+      var dataYear = parseInt(chart.dataset.currentYear, 10);
+      var yearKeys = Object.keys(dataObj).map(Number).concat([dataYear]);
+      var rangeMin = Math.min.apply(null, yearKeys) - 1;
+      var rangeMax = Math.max.apply(null, yearKeys) + 2;
+
+      var yearLabel = chart.querySelector("[data-year-label]");
+      var emptyNote = chart.querySelector("[data-empty-note]");
+      var bars = chart.querySelectorAll("[data-month-bar]");
+
+      function render(year) {
+        var months = dataObj[year];
+        if (!months) {
+          months = [];
+          for (var i = 0; i < 12; i++) months.push({ total: 0, issued: 0, collected: 0 });
+        }
+        var max = 1;
+        months.forEach(function (m) { max = Math.max(max, m.total); });
+        var anyData = months.some(function (m) { return m.total > 0; });
+        emptyNote.hidden = anyData;
+
+        bars.forEach(function (bar, i) {
+          var m = months[i] || { total: 0, issued: 0, collected: 0 };
+          bar.querySelector("[data-bar-total]").style.height = Math.max(2, m.total / max * 100) + "%";
+          bar.querySelector("[data-bar-issued]").style.height = Math.max(2, m.issued / max * 100) + "%";
+          bar.querySelector("[data-bar-collected]").style.height = Math.max(2, m.collected / max * 100) + "%";
+
+          var totalLabel = bar.querySelector("[data-label-total]");
+          totalLabel.textContent = shortFmt(m.total);
+          totalLabel.hidden = m.total <= 0;
+          var issuedLabel = bar.querySelector("[data-label-issued]");
+          issuedLabel.textContent = shortFmt(m.issued);
+          issuedLabel.hidden = m.issued <= 0;
+          var collectedLabel = bar.querySelector("[data-label-collected]");
+          collectedLabel.textContent = shortFmt(m.collected);
+          collectedLabel.hidden = m.collected <= 0;
+        });
+
+        yearLabel.textContent = year;
+      }
+
+      chart.querySelector("[data-year-prev]").addEventListener("click", function () {
+        dataYear = Math.max(rangeMin, dataYear - 1);
+        render(dataYear);
+      });
+      chart.querySelector("[data-year-next]").addEventListener("click", function () {
+        dataYear = Math.min(rangeMax, dataYear + 1);
+        render(dataYear);
+      });
+    });
+  })();
+  <% end %>
+<% else %>
+  <p><%= t("payment_terms.analytics.no_access") %></p>
+<% end %>
+

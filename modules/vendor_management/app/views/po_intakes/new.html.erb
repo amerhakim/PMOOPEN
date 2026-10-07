@@ -1,0 +1,31 @@
+<% html_title t("vendor_management.po_ai.title") %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { t("vendor_management.po_ai.title") }
+    header.with_breadcrumbs(
+      [
+        { href: projects_vendor_management_purchase_orders_path(@project), text: t("vendor_management.purchase_orders.title") },
+        t("vendor_management.po_ai.title")
+      ]
+    )
+  end
+%>
+
+<p class="op-form-hint" style="max-width: 760px;">
+  <%= t("vendor_management.po_ai.intro") %>
+</p>
+
+<%= form_with url: projects_vendor_management_po_intakes_path(@project), method: :post, multipart: true, local: true, data: { turbo: false } do |f| %>
+  <div class="form--field">
+    <label class="form--label" for="file"><%= t("vendor_management.po_ai.file_label") %></label>
+    <div class="form--field-container">
+      <%= f.file_field :file, accept: ".pdf,.xlsx,.xlsm,.csv", required: true %>
+    </div>
+    <div class="form--field-instructions"><%= t("vendor_management.po_ai.file_hint") %></div>
+  </div>
+  <div class="form--actions">
+    <%= f.submit t("vendor_management.po_ai.read_file"), class: "button -highlight" %>
+    <%= link_to t(:button_cancel), projects_vendor_management_purchase_orders_path(@project), class: "button" %>
+  </div>
+<% end %>

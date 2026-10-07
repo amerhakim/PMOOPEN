@@ -1,0 +1,157 @@
+<%
+  ov = overview
+  share = ->(n) { ov[:total].positive? ? (n * 100.0 / ov[:total]).round : 0 }
+  growth = ov[:prior_total].positive? ? ((ov[:total] - ov[:prior_total]) * 100.0 / ov[:prior_total]).round : nil
+  vs_total = t("pmo_dashboard.vs_total")
+
+  cards = [
+    { filter: "all", icon: :folder, label: t("pmo_dashboard.kpi_total_projects"), value: ov[:total],
+      tint: "#f3f7ff", accent: "#3b82f6", delta_color: "#16a34a",
+      delta: "#{growth.nil? ? '–' : "#{growth}%"} #{t('pmo_dashboard.vs_last_month')}" },
+    { filter: "active", icon: :runner, label: t("pmo_dashboard.kpi_active_projects"), value: ov[:active],
+      tint: "#f1faf5", accent: "#16a34a", delta_color: "#16a34a", delta: "#{share.call(ov[:active])}% #{vs_total}" },
+    { filter: "on_track", icon: :clock, label: t("pmo_dashboard.status_on_track"), value: ov[:on_track],
+      tint: "#f0faf8", accent: "#0f9d77", delta_color: "#16a34a", delta: "#{share.call(ov[:on_track])}% #{vs_total}" },
+    { filter: "at_risk", icon: :alert, label: t("pmo_dashboard.status_at_risk"), value: ov[:at_risk],
+      tint: "#fff8f1", accent: "#f97316", delta_color: "#d97706", delta: "#{share.call(ov[:at_risk])}% #{vs_total}" },
+    { filter: "finished", icon: :check, label: t("pmo_dashboard.status_completed"), value: ov[:finished],
+      tint: "#f3f7ff", accent: "#2563eb", delta_color: "#2563eb", delta: "#{share.call(ov[:finished])}% #{vs_total}" },
+    { href: payment_terms_archived_path, icon: :archive, label: t("pmo_dashboard.status_archived"), value: ov[:archived],
+      tint: "#f4f6f9", accent: "#64748b", delta_color: "#475569", delta: "#{share.call(ov[:archived])}% #{vs_total}" }
+  ]
+
+  status_entries = [
+    { key: "on_track", label: t("pmo_dashboard.status_on_track"), count: ov[:on_track], always: true },
+    { key: "at_risk", label: t("pmo_dashboard.status_at_risk"), count: ov[:at_risk], always: true },
+    { key: "finished", label: t("pmo_dashboard.status_completed"), count: ov[:finished], always: true },
+    { key: "archived", label: t("pmo_dashboard.status_archived"), count: ov[:archived], always: true },
+    { key: "off_track", label: t("pmo_dashboard.status_delayed"), count: ov[:off_track], always: false },
+    { key: "none", label: t("pmo_dashboard.status_not_set"), count: ov[:none], always: false }
+  ]
+  segments = pmo_donut_segments(status_entries, radius: 50, center: 75)
+  legend_rows = status_entries.select { |e| e[:always] || e[:count].positive? }
+
+  health_circ = 2 * Math::PI * 52
+  health_len = ov[:health_percent] ? health_circ * ov[:health_percent] / 100.0 : 0
+%>
+
+<div class="pmo-ov-wrap">
+<div class="pmo-ov-cards">
+  <% cards.each do |card| %>
+    <%= content_tag(card[:href] ? :a : :div,
+                    class: "pmo-ov-card",
+                    href: card[:href],
+                    data: (card[:filter] ? { status_filter: card[:filter], active: (card[:filter] == "active" ? "true" : nil) }.compact : nil),
+                    style: "background: #{card[:tint]};#{' text-decoration: none;' if card[:href]}") do %>
+      <div class="pmo-ov-icon" style="color: <%= card[:accent] %>;"><%= pmo_kpi_icon(card[:icon]) %></div>
+      <div>
+        <div class="pmo-ov-card-label"><%= card[:label] %></div>
+        <div class="pmo-ov-card-value"><%= card[:value] %></div>
+        <div class="pmo-ov-card-delta" style="color: <%= card[:delta_color] %>;">&uarr; <%= card[:delta] %></div>
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<div class="pmo-ov-panels">
+  <div class="pmo-ov-panel">
+    <div class="pmo-ov-title"><%= t("pmo_dashboard.status_overview") %></div>
+    <div class="pmo-ov-donut-row">
+      <svg viewBox="0 0 150 150" width="150" height="150" role="img" aria-label="<%= t('pmo_dashboard.status_overview') %>">
+        <circle cx="75" cy="75" r="50" fill="none" stroke="#eef1f6" stroke-width="24" />
+        <% segments.each do |seg| %>
+          <circle cx="75" cy="75" r="50" fill="none" stroke="<%= pmo_health_color(seg[:key]) %>" stroke-width="24"
+                  stroke-dasharray="<%= seg[:dash] %> <%= seg[:gap] %>" stroke-dashoffset="<%= seg[:offset] %>"
+                  transform="rotate(-90 75 75)" />
+        <% end %>
+        <% segments.each do |seg| %>
+          <% next if seg[:percent] < 8 %>
+          <text x="<%= seg[:label_x] %>" y="<%= seg[:label_y] %>" text-anchor="middle" dominant-baseline="central"
+                font-size="10" font-weight="700" fill="#fff"><%= seg[:percent] %>%</text>
+        <% end %>
+        <text x="75" y="72" text-anchor="middle" font-size="24" font-weight="700" fill="#0d1b2a"><%= ov[:total] %></text>
+        <text x="75" y="88" text-anchor="middle" font-size="9" fill="#6b7280"><%= t("pmo_dashboard.kpi_total_projects") %></text>
+      </svg>
+      <div class="pmo-ov-legend">
+        <% legend_rows.each do |row| %>
+          <div class="pmo-ov-legend-row">
+            <span class="pmo-ov-dot" style="background: <%= pmo_health_color(row[:key]) %>;"></span>
+            <span class="pmo-ov-legend-label"><%= row[:label] %></span>
+            <span class="pmo-ov-legend-num"><%= row[:count] %></span>
+            <span class="pmo-ov-legend-pct"><%= share.call(row[:count]) %>%</span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="pmo-ov-panel">
+    <div class="pmo-ov-title"><%= t("pmo_dashboard.projects_by_department") %></div>
+    <% depts = ov[:departments] %>
+    <% if depts.empty? %>
+      <p class="pmo-ov-empty">
+        <%= ov[:department_field] ? t("pmo_dashboard.no_projects") : t("pmo_dashboard.department_missing") %>
+      </p>
+    <% else %>
+      <%
+        chart_w = 360
+        chart_h = 210
+        left = 30
+        right = chart_w - 8
+        top = 22
+        bottom = chart_h - 34
+        max_count = depts.map(&:last).max
+        step = max_count <= 4 ? 1 : (max_count / 4.0).ceil
+        top_value = step * 4
+        slot = (right - left).to_f / depts.size
+        bar_w = [slot * 0.55, 44].min
+        label_len = depts.size > 5 ? 8 : 12
+      %>
+      <svg class="pmo-ov-chart" viewBox="0 0 <%= chart_w %> <%= chart_h %>" role="img" aria-label="<%= t('pmo_dashboard.projects_by_department') %>">
+        <% (0..4).each do |i| %>
+          <% y = bottom - (bottom - top) * i / 4.0 %>
+          <line x1="<%= left %>" y1="<%= y.round(1) %>" x2="<%= right %>" y2="<%= y.round(1) %>" stroke="#eef1f6" stroke-width="1" />
+          <text x="<%= left - 8 %>" y="<%= (y + 3).round(1) %>" text-anchor="end" font-size="9" fill="#9ca3af"><%= i * step %></text>
+        <% end %>
+        <% depts.each_with_index do |(name, n), i| %>
+          <% bar_h = (bottom - top) * n.to_f / top_value %>
+          <% x = left + slot * i + (slot - bar_w) / 2 %>
+          <rect x="<%= x.round(1) %>" y="<%= (bottom - bar_h).round(1) %>" width="<%= bar_w.round(1) %>" height="<%= bar_h.round(1) %>"
+                rx="3" fill="<%= PmoDashboardHelper::DEPARTMENT_COLORS[i % PmoDashboardHelper::DEPARTMENT_COLORS.size] %>" />
+          <text x="<%= (x + bar_w / 2).round(1) %>" y="<%= (bottom - bar_h - 6).round(1) %>" text-anchor="middle" font-size="10" font-weight="700" fill="#0d1b2a"><%= n %></text>
+          <text x="<%= (x + bar_w / 2).round(1) %>" y="<%= bottom + 16 %>" text-anchor="middle" font-size="10" fill="#6b7280"><%= truncate(name, length: label_len) %></text>
+        <% end %>
+      </svg>
+    <% end %>
+  </div>
+
+  <div class="pmo-ov-panel">
+    <div class="pmo-ov-title"><%= t("pmo_dashboard.portfolio_health") %></div>
+    <div class="pmo-ov-donut-row">
+      <svg viewBox="0 0 150 150" width="140" height="140" role="img" aria-label="<%= t('pmo_dashboard.portfolio_health') %>">
+        <circle cx="75" cy="75" r="52" fill="none" stroke="#ece9f8" stroke-width="14" />
+        <% if ov[:health_percent] %>
+          <circle cx="75" cy="75" r="52" fill="none" stroke="#22a06b" stroke-width="14" stroke-linecap="round"
+                  stroke-dasharray="<%= health_len.round(2) %> <%= (health_circ - health_len).round(2) %>" transform="rotate(-90 75 75)" />
+        <% end %>
+        <text x="75" y="76" text-anchor="middle" font-size="26" font-weight="700" fill="#0d1b2a"><%= ov[:health_percent] ? "#{ov[:health_percent]}%" : "–" %></text>
+        <text x="75" y="93" text-anchor="middle" font-size="11" font-weight="600" fill="#22a06b"><%= t("pmo_dashboard.status_on_track") %></text>
+      </svg>
+      <div class="pmo-ov-legend">
+        <% [["on_track", ov[:on_track]], ["at_risk", ov[:at_risk]], ["off_track", ov[:off_track]]].each do |key, n| %>
+          <div class="pmo-ov-legend-row">
+            <span class="pmo-ov-dot" style="background: <%= pmo_health_color(key) %>;"></span>
+            <span class="pmo-ov-legend-label"><%= t("pmo_dashboard.status_#{key == 'off_track' ? 'delayed' : key}") %></span>
+            <span class="pmo-ov-legend-num"><%= n %></span>
+          </div>
+        <% end %>
+        <div class="pmo-ov-legend-row pmo-ov-legend-total">
+          <span class="pmo-ov-legend-label"><%= t("pmo_dashboard.kpi_total_projects") %></span>
+          <span class="pmo-ov-legend-num"><%= ov[:total] %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+

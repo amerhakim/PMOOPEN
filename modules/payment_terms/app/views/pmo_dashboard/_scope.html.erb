@@ -1,0 +1,33 @@
+<% live = scope[:live] %>
+
+<% if live.empty? && scope[:overview][:archived].zero? %>
+  <p><%= t("pmo_dashboard.no_projects") %></p>
+<% else %>
+  <%= render "overview", overview: scope[:overview] %>
+
+<% if live.any? %>
+  <div data-pmo-carousel data-cards-url="<%= my_pmo_dashboard_cards_path %>" style="display: flex; align-items: flex-start; gap: 16px;">
+    <button type="button" class="pmo-prev-btn"
+            style="background: white; border: 0.5px solid #e5e7eb; width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #0d1b2a; font-size: 20px; flex-shrink: 0;">&larr;</button>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; flex: 1;">
+      <% live.each_with_index do |project, index| %>
+        <div class="pmo-slide" data-index="<%= index %>" data-project-id="<%= project.id %>" data-status="active" data-health="<%= pmo_health_key(project) %>" style="min-width: 0; height: 850px;">
+          <div class="pmo-slide-loading"><%= t("pmo_dashboard.loading_card") %></div>
+        </div>
+      <% end %>
+    </div>
+
+    <button type="button" class="pmo-next-btn"
+            style="background: white; border: 0.5px solid #e5e7eb; width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #0d1b2a; font-size: 20px; flex-shrink: 0;">&rarr;</button>
+  </div>
+
+  <p class="pmo-no-match" style="display: none; text-align: center; color: #6b7280; font-size: 13px; padding: 32px 0;"><%= t("pmo_dashboard.no_projects_for_filter") %></p>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+    <div class="pmo-page-indicator" style="font-size: 13px; color: #6b7280; font-weight: 600;"></div>
+    <div class="pmo-dots" style="display: flex; justify-content: center; gap: 8px;"></div>
+  </div>
+<% end %>
+<% end %>
+

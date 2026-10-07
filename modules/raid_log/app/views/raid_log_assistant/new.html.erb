@@ -1,0 +1,37 @@
+<% html_title t("label_raid_log_ai_assist") %>
+
+<div class="generic-table--container">
+  <h2><%= t("label_raid_log_ai_assist") %></h2>
+
+  <p><%= t("raid_log.new.description") %></p>
+
+  <%= form_tag projects_raid_log_assistant_propose_path(@project), data: { turbo: false } do %>
+    <div class="form--field">
+      <label class="form--label" for="type_name"><%= t("raid_log.new.type_label") %></label>
+      <div class="form--field-container">
+        <%= select_tag :type_name,
+                        options_for_select(@type_names.map { |n| [t("raid_log.types.#{n.downcase}"), n] },
+                                            params[:type_name]) %>
+      </div>
+    </div>
+
+    <div class="form--field">
+      <label class="form--label" for="user_context"><%= t("raid_log.new.context_label") %></label>
+      <div class="form--field-container">
+        <%= text_area_tag :user_context, params[:context], rows: 4,
+                           placeholder: t("raid_log.new.context_placeholder") %>
+      </div>
+    </div>
+
+    <div class="form--field">
+      <label class="form--label" for="count"><%= t("raid_log.new.count_label") %></label>
+      <div class="form--field-container">
+        <%= number_field_tag :count, 3, min: 1, max: 8, style: "width: 4em" %>
+      </div>
+    </div>
+
+    <div class="form--actions">
+      <%= submit_tag t("raid_log.new.submit"), class: "button -highlight" %>
+    </div>
+  <% end %>
+</div>

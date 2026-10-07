@@ -1,0 +1,55 @@
+<%# The bulk-select form and its "Delete selected" button now live one
+    level up, in _contract_line_card.html.erb, wrapping this whole card
+    (header + table) -- so the checkboxes below and that button share one
+    form without nesting <form> tags. %>
+<%= component_wrapper do %>
+  <div class="generic-table--container <%= container_class %>" data-test-selector="<%= test_selector %>" id="<%= container_id %>">
+    <div class="generic-table--results-container">
+      <%= render(Primer::BaseComponent.new(**@system_arguments)) do %>
+        <colgroup>
+          <col style="width: 2em;">
+          <% headers.each do |_name, _options| %>
+            <col>
+          <% end %>
+          <col data-highlight="false">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>
+              <%= check_box_tag "select_all_payments_#{contract_line.id}", "1", false, id: "select-all-payments-#{contract_line.id}", data: { action: "click->checkable#toggleAll" }, "aria-label": t("payment_terms.index.select_all") %>
+            </th>
+            <% headers.each do |name, options| %>
+              <th aria-label="<%= options[:caption] %>">
+                <div class="generic-table--sort-header-outer">
+                  <div class="generic-table--sort-header">
+                    <span>
+                      <%= options[:caption] %>
+                    </span>
+                  </div>
+                </div>
+              </th>
+            <% end %>
+            <th>
+              <div class="generic-table--sort-header-outer">
+                <div class="generic-table--sort-header">
+                  <span><%= t("payment_terms.index.actions_column") %></span>
+                </div>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if rows.empty? %>
+          <tr class="generic-table--empty-row">
+            <td colspan="<%= headers.length + 2 %>"><%= empty_row_message %></td>
+          </tr>
+          <% end %>
+          <%= render_collection rows %>
+          <tr class="payment-terms-empty-filtered-row" hidden>
+            <td colspan="<%= headers.length + 2 %>"><%= t("payment_terms.index.no_payments_filtered") %></td>
+          </tr>
+        </tbody>
+      <% end %>
+    </div>
+  </div>
+<% end %>

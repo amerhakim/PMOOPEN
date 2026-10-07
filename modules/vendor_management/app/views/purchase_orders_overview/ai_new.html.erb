@@ -1,0 +1,15 @@
+<% html_title t("vendor_management.po_ai.title") %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { t("vendor_management.po_ai.title") }
+    header.with_breadcrumbs(
+      [
+        { href: vendor_management_purchase_orders_overview_path, text: t("vendor_management.purchase_orders_overview.title") },
+        t("vendor_management.po_ai.title")
+      ]
+    )
+  end
+%>
+
+<%= render "po_intakes/upload", url: vendor_management_po_intakes_overview_create_path, cancel_url: vendor_management_purchase_orders_overview_path, projects: @projects %>

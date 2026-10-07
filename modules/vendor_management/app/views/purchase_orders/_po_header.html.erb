@@ -1,0 +1,24 @@
+<% po = @purchase_order %>
+<% status_class = { "approved" => "good", "active" => "good", "pending_approval" => "info", "cancelled" => "bad" }[po.status].to_s %>
+
+<nav class="po-crumbs" aria-label="Breadcrumb">
+  <%= link_to t("vendor_management.purchase_orders.title"), projects_vendor_management_purchase_orders_path(@project) %> / <%= po.po_number %>
+</nav>
+
+<div class="po-head">
+  <div style="min-width: 0;">
+    <h1 class="po-title"><span class="po-no"><%= po.po_number %></span> <span class="po-pill <%= status_class %>"><%= po.status.humanize %></span></h1>
+    <p class="po-sub">
+      <b><%= po.vendor&.name %></b>
+      <% if po.quotation_ref_no.present? %> · <%= t("vendor_management.po_page.quotation") %> <%= po.quotation_ref_no %><% end %>
+      <% if po.issue_date %> · <%= po.issue_date.strftime("%d-%b-%Y") %><% end %>
+      <% if po.o_and_d.present? %> · O&amp;D <%= po.o_and_d %><% end %>
+    </p>
+  </div>
+  <div class="po-actions">
+    <%= render(Primer::Beta::Button.new(tag: :a, href: projects_export_vendor_management_purchase_order_path(@project, po), target: "_blank")) { t("vendor_management.purchase_orders.export_pdf") } %>
+    <% if po.quotation_file_attached? %>
+      <%= render(Primer::Beta::Button.new(tag: :a, href: projects_vendor_management_purchase_order_quotation_file_path(@project, po), target: "_blank")) { t("vendor_management.po_page.source_file") } %>
+    <% end %>
+  </div>
+</div>
